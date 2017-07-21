@@ -1,6 +1,9 @@
 # synodl
 Command-line client for Synology's DownloadStation
 
+![synodl](https://raw.githubusercontent.com/cockroach/synodl/media/screenshot.png "synodl 0.1.0")
+
+
 ## Getting started
 
 Create a configuration file `.synodl` in your home directory with these entries:
