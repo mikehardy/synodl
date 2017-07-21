@@ -27,7 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "ini.h"
 
 static int
-config_cb(void* user, const char* s, const char* name, const char* value)
+config_cb(void *user, const char *s, const char *name, const char *value)
 {
 	struct cfg *cf;
 

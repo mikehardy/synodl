@@ -53,50 +53,50 @@ struct tasklist_ent *nc_selected_task;
 static WINDOW *status, *list, *version, *header;
 
 static void
-nc_status_color(const char *status, WINDOW *win)
+nc_status_color(const char *text, WINDOW *win)
 {
-	if (!strcmp(status, "waiting"))
+	if (!strcmp(text, "waiting"))
 		wattron(win, COLOR_PAIR(7)); /* yellow */
-	else if (!strcmp(status, "downloading"))
+	else if (!strcmp(text, "downloading"))
 		wattron(win, COLOR_PAIR(6)); /* cyan */
-	else if (!strcmp(status, "paused"))
+	else if (!strcmp(text, "paused"))
 		wattron(win, COLOR_PAIR(8)); /* magenta */
-	else if (!strcmp(status, "finishing"))
+	else if (!strcmp(text, "finishing"))
 		wattron(win, COLOR_PAIR(6)); /* cyan */
-	else if (!strcmp(status, "finished"))
+	else if (!strcmp(text, "finished"))
 		wattron(win, COLOR_PAIR(3)); /* green */
-	else if (!strcmp(status, "hash_checking"))
+	else if (!strcmp(text, "hash_checking"))
 		wattron(win, COLOR_PAIR(6)); /* cyan */
-	else if (!strcmp(status, "seeding"))
+	else if (!strcmp(text, "seeding"))
 		wattron(win, COLOR_PAIR(4)); /* blue */
-	else if (!strcmp(status, "filehosting_waiting"))
+	else if (!strcmp(text, "filehosting_waiting"))
 		wattron(win, COLOR_PAIR(7)); /* yellow */
-	else if (!strcmp(status, "extracting"))
+	else if (!strcmp(text, "extracting"))
 		wattron(win, COLOR_PAIR(6)); /* cyan */
 	else /* error */
 		wattron(win, COLOR_PAIR(5)); /* red */
 }
 
 static void
-nc_status_color_off(const char *status, WINDOW *win)
+nc_status_color_off(const char *text, WINDOW *win)
 {
-	if (!strcmp(status, "waiting"))
+	if (!strcmp(text, "waiting"))
 		wattron(win, COLOR_PAIR(7)); /* yellow */
-	else if (!strcmp(status, "downloading"))
+	else if (!strcmp(text, "downloading"))
 		wattroff(win, COLOR_PAIR(6)); /* cyan */
-	else if (!strcmp(status, "paused"))
+	else if (!strcmp(text, "paused"))
 		wattroff(win, COLOR_PAIR(8)); /* magenta */
-	else if (!strcmp(status, "finishing"))
+	else if (!strcmp(text, "finishing"))
 		wattroff(win, COLOR_PAIR(6)); /* cyan */
-	else if (!strcmp(status, "finished"))
+	else if (!strcmp(text, "finished"))
 		wattroff(win, COLOR_PAIR(3)); /* green */
-	else if (!strcmp(status, "hash_checking"))
+	else if (!strcmp(text, "hash_checking"))
 		wattroff(win, COLOR_PAIR(6)); /* cyan */
-	else if (!strcmp(status, "seeding"))
+	else if (!strcmp(text, "seeding"))
 		wattroff(win, COLOR_PAIR(4)); /* blue */
-	else if (!strcmp(status, "filehosting_waiting"))
+	else if (!strcmp(text, "filehosting_waiting"))
 		wattron(win, COLOR_PAIR(7)); /* yellow */
-	else if (!strcmp(status, "extracting"))
+	else if (!strcmp(text, "extracting"))
 		wattroff(win, COLOR_PAIR(6)); /* cyan */
 	else /* error */
 		wattroff(win, COLOR_PAIR(5)); /* red */
@@ -106,7 +106,7 @@ static void
 unit(double size, char *buf, ssize_t len)
 {
 	char u[] = "BkMGTPEZY";
-	int cur = 0;
+	unsigned int cur = 0;
 
 
 	while ((size > 1024) && (cur < strlen(u)))
@@ -505,7 +505,7 @@ nc_help()
 }
 
 static void
-nc_task_details(const char *base, struct session *s)
+nc_task_details()
 {
 	struct task *t;
 	double progress;
@@ -527,7 +527,7 @@ nc_task_details(const char *base, struct session *s)
 	wattron(win, COLOR_PAIR(1));
 	wbkgd(win, COLOR_PAIR(1));
 	box(win, 0, 0);
-	mvwprintw(win, 0, (w - 22) / 2, "[ Download task details ]");
+	mvwprintw(win, 0, (w - 24) / 2, "[ Download task details ]");
 	wattroff(win, COLOR_PAIR(2));
 	wrefresh(win);
 
@@ -649,6 +649,9 @@ nc_delete_task(const char *base, struct session *s)
 		case 0x6e: /* n */
 			ok = 0;
 			break;
+		default:
+			break;
+			/* ignore */
 		}
 
 		if (ok)
@@ -741,6 +744,7 @@ ui_add_task(const char *base, struct session *s, const char *task)
 {
 	WINDOW *win, *prompt;
 	char str[1024];
+	unsigned int i, len;
 
 	win = newwin(4, COLS - 4, (LINES / 2) - 3, 2);
 	wattron(win, COLOR_PAIR(1));
@@ -757,7 +761,6 @@ ui_add_task(const char *base, struct session *s, const char *task)
 	touchwin(win);
 	wrefresh(prompt);
 
-	int i, len;
 	len = strlen(task);
 
 	for (i=0; i < strlen(task); i++)
@@ -844,7 +847,7 @@ main_loop(const char *base, struct session *s)
 			break;
 		case 0x69: /* i */
 		case 0x49: /* I */
-			nc_task_details(base, s);
+			nc_task_details();
 			break;
 		case 0x71: /* q */
 		case 0x51:  /* Q */

@@ -42,7 +42,7 @@ void help()
 
 int main(int argc, char **argv)
 {
-	int c, option_idx;
+	int c;
 	const char *url;
 	struct cfg config;
 	struct session s;
@@ -62,13 +62,6 @@ int main(int argc, char **argv)
 
 		switch (c)
 		{
-		case 0:
-			switch (option_idx)
-			{
-			case 1:
-				break;
-			}
-			break;
 		case 'h':
 			help();
 			return EXIT_SUCCESS;
