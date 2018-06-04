@@ -490,7 +490,7 @@ nc_help()
 	wprintw(help, " ... Refresh list\n");
 
 	wprintw(help, "\nThis is %s\n", PACKAGE_STRING);
-	wprintw(help, "github.com/cockroach/synodl");
+	wprintw(help, "https://code.ott.net/synodl");
 
 	touchwin(win);
 	wrefresh(help);

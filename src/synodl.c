@@ -37,7 +37,7 @@ void help()
 	printf("  -h           Show this help\n");
 	printf("\n");
 	printf("This is %s.\n", PACKAGE_STRING);
-	printf("Report bugs at https://github.com/cockroach/synodl/\n");
+	printf("Report bugs at https://code.ott.net/synodl/\n");
 }
 
 int main(int argc, char **argv)
