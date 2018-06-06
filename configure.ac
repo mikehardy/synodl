@@ -1,4 +1,4 @@
-AC_INIT([synodl], 0.1.0)
+AC_INIT([synodl], 0.2.0)
 AM_INIT_AUTOMAKE([foreign])
 AC_PROG_CC
 
