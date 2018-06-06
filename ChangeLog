@@ -1,0 +1,9 @@
+== 0.2.0 (UNRELEASED) ==
+
+* Use more appropriate data types for amount of transferred data
+* Fix compatibility with json-c-0.13
+* Update download URLs
+
+== 0.1.0 (12 Jun 2016) ==
+
+* Initial public release
