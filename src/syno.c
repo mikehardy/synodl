@@ -1,7 +1,7 @@
 /*
 
 SynoDL - CLI for Synology's DownloadStation
-Copyright (C) 2015  Stefan Ott
+Copyright (C) 2015 - 2018  Stefan Ott
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -217,7 +217,7 @@ session_load(struct string *st, struct session *session)
 	obj = json_tokener_parse_ex(tok, st->ptr, st->size);
 	json_tokener_free(tok);
 
-	if (is_error(obj))
+	if (!obj)
 	{
 		fprintf(stderr, "Failed to decode JSON data\n");
 		json_object_put(obj);
@@ -246,7 +246,7 @@ tasks_receive(struct string *st, void (*cb)(struct task *))
 	obj = json_tokener_parse_ex(tok, st->ptr, st->size);
 	json_tokener_free(tok);
 
-	if (is_error(obj))
+	if (!obj)
 	{
 		fprintf(stderr, "Failed to decode JSON data\n");
 		json_object_put(obj);
@@ -275,7 +275,7 @@ parse_reply(struct string *st)
 	obj = json_tokener_parse_ex(tok, st->ptr, st->size);
 	json_tokener_free(tok);
 
-	if (is_error(obj))
+	if (!obj)
 	{
 		fprintf(stderr, "Failed to decode JSON data\n");
 		json_object_put(obj);

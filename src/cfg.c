@@ -1,7 +1,7 @@
 /*
 
 SynoDL - CLI for Synology's DownloadStation
-Copyright (C) 2015  Stefan Ott
+Copyright (C) 2015 - 2018  Stefan Ott
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "ini.h"
 
 static int
-config_cb(void* user, const char* s, const char* name, const char* value)
+config_cb(void *user, const char *s, const char *name, const char *value)
 {
 	struct cfg *cf;
 

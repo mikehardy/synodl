@@ -1,7 +1,7 @@
 /*
 
 SynoDL - CLI for Synology's DownloadStation
-Copyright (C) 2015  Stefan Ott
+Copyright (C) 2015 - 2018  Stefan Ott
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -37,12 +37,12 @@ void help()
 	printf("  -h           Show this help\n");
 	printf("\n");
 	printf("This is %s.\n", PACKAGE_STRING);
-	printf("Report bugs at https://github.com/cockroach/synodl/\n");
+	printf("Report bugs at https://code.ott.net/synodl/\n");
 }
 
 int main(int argc, char **argv)
 {
-	int c, option_idx;
+	int c;
 	const char *url;
 	struct cfg config;
 	struct session s;
@@ -62,13 +62,6 @@ int main(int argc, char **argv)
 
 		switch (c)
 		{
-		case 0:
-			switch (option_idx)
-			{
-			case 1:
-				break;
-			}
-			break;
 		case 'h':
 			help();
 			return EXIT_SUCCESS;

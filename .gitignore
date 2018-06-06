@@ -1,0 +1,16 @@
+Makefile
+Makefile.in
+aclocal.m4
+autom4te.cache/
+compile
+config.h*
+config.log
+config.status
+configure
+depcomp
+install-sh
+missing
+src/synodl
+src/*.o
+src/.deps/
+stamp-h1
