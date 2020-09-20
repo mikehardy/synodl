@@ -1,7 +1,7 @@
 /*
 
 SynoDL - CLI for Synology's DownloadStation
-Copyright (C) 2015 - 2018  Stefan Ott
+Copyright (C) 2015 - 2020  Stefan Ott
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 struct session
 {
-	char sid[24];
+	char sid[128];
 };
 
 struct task

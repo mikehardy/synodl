@@ -1,7 +1,7 @@
 /*
 
 SynoDL - CLI for Synology's DownloadStation
-Copyright (C) 2015 - 2018  Stefan Ott
+Copyright (C) 2015 - 2020  Stefan Ott
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -206,6 +206,7 @@ session_load(struct string *st, struct session *session)
 {
 	json_tokener *tok;
 	json_object *obj;
+	int res;
 
 	tok = json_tokener_new();
 	if (!tok)
@@ -224,9 +225,10 @@ session_load(struct string *st, struct session *session)
 		return 1;
 	}
 
-	json_load_login(obj, session);
+	res = json_load_login(obj, session);
 	json_object_put(obj);
-	return 0;
+
+	return res;
 }
 
 static int
@@ -375,7 +377,13 @@ syno_login(const char *base, struct session *s, const char *u, const char *pw)
 		return 1;
 	}
 
-	session_load(&st, s);
+	if (session_load(&st, s) != 0)
+	{
+		fprintf(stderr, "Login failed\n");
+		free_string(&st);
+		return 1;
+	}
+
 	free_string(&st);
 
 	if (!strcmp(s->sid, ""))
