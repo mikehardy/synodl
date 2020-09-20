@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 struct session
 {
-	char sid[24];
+	char sid[128];
 };
 
 struct task

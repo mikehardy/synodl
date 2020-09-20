@@ -1,3 +1,7 @@
+== 0.2.1 (UNRELEASED) ==
+
+* Increase maximum length of session id
+
 == 0.2.0 (06 Jun 2018) ==
 
 * Use more appropriate data types for amount of transferred data
