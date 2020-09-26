@@ -31,19 +31,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "config.h"
 #include "syno.h"
 #include "ui.h"
+#include "ui-util.h"
 
 #define UNUSED __attribute__((unused))
 
 /*
 	Common
 */
-
-struct tasklist_ent
-{
-	struct task *t;
-	struct tasklist_ent *next;
-	struct tasklist_ent *prev;
-};
 
 struct tasklist_ent *tasks;
 struct tasklist_ent *nc_selected_task;
@@ -161,25 +155,6 @@ nc_status_totals(int up, int dn)
 	return nc_status(speed);
 }
 
-static int
-selected_position()
-{
-	int pos = 0;
-	struct tasklist_ent *tmp;
-
-	for (tmp = tasks; tmp != NULL; tmp = tmp->next)
-	{
-		if (tmp == nc_selected_task)
-		{
-			return pos;
-		}
-
-		pos += 1;
-	}
-
-	return pos;
-}
-
 static void
 nc_print_tasks()
 {
@@ -192,7 +167,7 @@ nc_print_tasks()
 	i = 0;
 	total_dn = 0;
 	total_up = 0;
-	pos = selected_position();
+	pos = selected_position(tasks, nc_selected_task);
 
 	tn_width = COLS - 24;
 	snprintf(fmt, sizeof(fmt), "%%-%d.%ds", tn_width, tn_width);
