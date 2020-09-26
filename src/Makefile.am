@@ -1,5 +1,7 @@
 bin_PROGRAMS = synodl
 
+EXTRA_DIST = cfg.h ini.h syno.h ui.h ui-util.h
+
 synodl_SOURCES = synodl.c cfg.c syno.c ini.c ui.c ui-util.c
 synodl_LDADD = @libjson_LIBS@ @libcurl_LIBS@ @libncursew_LIBS@ -lm
 synodl_CFLAGS = @libjson_CFLAGS@ @libcurl_CFLAGS@ @libncursew_CFLAGS@
