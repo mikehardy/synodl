@@ -1,3 +1,7 @@
+== 0.2.2 (UNRELEASED) ==
+
+* Use decimal prefixes when showing file size or transfer speed
+
 == 0.2.1 (20 Sep 2020) ==
 
 * Increase maximum length of session id

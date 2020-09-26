@@ -18,7 +18,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
-#include <math.h>
 #include <ncurses.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -98,29 +97,6 @@ nc_status_color_off(const char *text, WINDOW *win)
 		wattroff(win, COLOR_PAIR(5)); /* red */
 }
 
-static void
-unit(double size, char *buf, ssize_t len)
-{
-	char u[] = "BkMGTPEZY";
-	unsigned int cur = 0;
-
-
-	while ((size > 1024) && (cur < strlen(u)))
-	{
-		cur += 1;
-		size /= 1024;
-	}
-
-	if (size < 10)
-	{
-		snprintf(buf, len, "%1.1f%c", roundf(size * 100) / 100, u[cur]);
-	}
-	else
-	{
-		snprintf(buf, len, "%ld%c", lround(size), u[cur]);
-	}
-}
-
 static int
 nc_status(const char *fmt, ...)
 {
@@ -148,8 +124,8 @@ nc_status_totals(int up, int dn)
 	char up_buf[32], dn_buf[32];
 	char speed[128];
 
-	unit(up, up_buf, sizeof(up_buf));
-	unit(dn, dn_buf, sizeof(dn_buf));
+	print_size(up, up_buf, sizeof(up_buf));
+	print_size(dn, dn_buf, sizeof(dn_buf));
 	snprintf(speed, sizeof(speed), "↑ %s/s, ↓ %s/s.  Press '?' for help.",
 								up_buf, dn_buf);
 	return nc_status(speed);
@@ -193,7 +169,7 @@ nc_print_tasks()
 		mvwprintw(list, i, 1, fmt, t->fn);
 
 		/* size */
-		unit(t->size, buf, sizeof(buf));
+		print_size(t->size, buf, sizeof(buf));
 		mvwprintw(list, i, tn_width + 2, "%-5s", buf);
 
 		/* status */
@@ -519,7 +495,7 @@ nc_task_details()
 	/* size */
 	char buf[32];
 	snprintf(buf, sizeof(buf), "%ld", t->size);
-	unit(t->size, buf, sizeof(buf));
+	print_size(t->size, buf, sizeof(buf));
 	wattron(help, A_BOLD);
 	wprintw(help, "Size      ");
 	wattroff(help, A_BOLD);
@@ -527,7 +503,7 @@ nc_task_details()
 
 	/* downloaded */
 	snprintf(buf, sizeof(buf), "%ld", t->downloaded);
-	unit(t->downloaded, buf, sizeof(buf));
+	print_size(t->downloaded, buf, sizeof(buf));
 	progress = ((double) t->downloaded / t->size);
 	wattron(help, A_BOLD);
 	wprintw(help, "Downloaded");
@@ -536,7 +512,7 @@ nc_task_details()
 
 	/* uploaded */
 	snprintf(buf, sizeof(buf), "%ld", t->uploaded);
-	unit(t->uploaded, buf, sizeof(buf));
+	print_size(t->uploaded, buf, sizeof(buf));
 	progress = ((double) t->uploaded / t->size);
 	wattron(help, A_BOLD);
 	wprintw(help, "Uploaded  ");

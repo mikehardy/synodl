@@ -139,6 +139,128 @@ test_selected_position()
 }
 
 static void
+test_prefix_none()
+{
+	char buf[32];
+
+	print_size(500, buf, sizeof(buf));
+	CU_ASSERT_STRING_EQUAL(buf, "500B");
+}
+
+static void
+test_prefix_decimal_point()
+{
+	char buf[32];
+
+	print_size(7, buf, sizeof(buf));
+	CU_ASSERT_STRING_EQUAL(buf, "7.0B");
+}
+
+static void
+test_prefix_kb_decimal_point()
+{
+	char buf[32];
+
+	print_size(5300, buf, sizeof(buf));
+	CU_ASSERT_STRING_EQUAL(buf, "5.3k");
+}
+
+static void
+test_prefix_kb()
+{
+	char buf[32];
+
+	print_size(50000, buf, sizeof(buf));
+	CU_ASSERT_STRING_EQUAL(buf, "50k");
+}
+
+static void
+test_prefix_mb()
+{
+	char buf[32];
+
+	print_size(50000000, buf, sizeof(buf));
+	CU_ASSERT_STRING_EQUAL(buf, "50M");
+}
+
+static void
+test_prefix_gb()
+{
+	char buf[32];
+
+	print_size(50000000000, buf, sizeof(buf));
+	CU_ASSERT_STRING_EQUAL(buf, "50G");
+}
+
+static void
+test_prefix_tb()
+{
+	char buf[32];
+
+	print_size(50000000000000, buf, sizeof(buf));
+	CU_ASSERT_STRING_EQUAL(buf, "50T");
+}
+
+static void
+test_prefix_pb()
+{
+	char buf[32];
+
+	print_size(50000000000000000, buf, sizeof(buf));
+	CU_ASSERT_STRING_EQUAL(buf, "50P");
+}
+
+static void
+test_prefix_eb()
+{
+	char buf[32];
+
+	print_size(4300000000000000000, buf, sizeof(buf));
+	fprintf(stderr, "SIZE = %s\n", buf);
+	CU_ASSERT_STRING_EQUAL(buf, "4.3E");
+}
+
+static int
+test_size_prefix()
+{
+	CU_pSuite suite;
+
+	/* Add a suite to the registry */
+	suite = CU_add_suite("Size prefix", NULL, NULL);
+	if (!suite)
+	{
+		return 1;
+	}
+
+	/* Add tests to the suite */
+	if (
+		!CU_add_test(suite, "No prefix for small sizes",
+			test_prefix_none)
+		|| !CU_add_test(suite, "Decimal point in very small sizes",
+			test_prefix_decimal_point)
+		|| !CU_add_test(suite, "Prefix for kB",
+			test_prefix_kb)
+		|| !CU_add_test(suite, "Prefix for kB with decimal point",
+			test_prefix_kb_decimal_point)
+		|| !CU_add_test(suite, "Prefix for MB",
+			test_prefix_mb)
+		|| !CU_add_test(suite, "Prefix for GB",
+			test_prefix_gb)
+		|| !CU_add_test(suite, "Prefix for TB",
+			test_prefix_tb)
+		|| !CU_add_test(suite, "Prefix for PB",
+			test_prefix_pb)
+		|| !CU_add_test(suite, "Prefix for EB",
+			test_prefix_eb)
+	)
+	{
+		return 1;
+	}
+
+	return 0;
+}
+
+static void
 help()
 {
 }
@@ -168,6 +290,7 @@ int main(int argc, char **argv)
 	/* Add suites to the registry */
 	if (
 		test_selected_position()
+		|| test_size_prefix()
 	)
 	{
 		CU_cleanup_registry();
