@@ -34,6 +34,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "syno.h"
 #include "ui.h"
 
+#define UNUSED __attribute__((unused))
+
 struct string
 {
 	int size;
@@ -112,7 +114,7 @@ json_load_tasks(json_object *obj, void (*cb)(struct task *))
 {
 	json_object *data, *tasks, *task, *tmp, *additional, *transfer;
 	struct task dt;
-	int i;
+	unsigned int i;
 
 	if (json_check_success(obj) != 0)
 	{
@@ -138,7 +140,7 @@ json_load_tasks(json_object *obj, void (*cb)(struct task *))
 		return 1;
 	}
 
-	for (i=0; i < json_object_array_length(tasks); i++)
+	for (i=0; i < (size_t) json_object_array_length(tasks); i++)
 	{
 		memset(&dt, 0, sizeof(struct task));
 
@@ -314,7 +316,7 @@ curl_recv(void *ptr, size_t size, size_t nmemb, struct string *s)
 }
 
 static int
-curl_do(const char *url, void *cb_arg, struct string *st)
+curl_do(const char *url, void *cb_arg UNUSED, struct string *st)
 {
 	CURL *curl;
 	CURLcode res;

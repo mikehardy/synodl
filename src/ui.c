@@ -32,6 +32,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "syno.h"
 #include "ui.h"
 
+#define UNUSED __attribute__((unused))
+
 /*
 	Common
 */
@@ -184,7 +186,7 @@ nc_print_tasks()
 	struct tasklist_ent *tmp;
 	struct task *t;
 	int i, tn_width, total_dn, total_up, pos, pagenum;
-	char fmt[16];
+	char fmt[32];
 	char buf[32];
 
 	i = 0;
@@ -393,7 +395,7 @@ nc_status_bar()
 static void
 nc_header()
 {
-	char fmt[16];
+	char fmt[32];
 	int tn_width;
 
 	if (header)
@@ -436,7 +438,7 @@ nc_task_window()
 	wrefresh(list);
 }
 
-void handle_winch(int sig)
+void handle_winch(int sig UNUSED)
 {
 	endwin();
 	refresh();
