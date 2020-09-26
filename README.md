@@ -1,5 +1,6 @@
-# synodl
-Command-line client for Synology's DownloadStation
+# synodl – Command-line client for Synology's DownloadStation
+
+synodl is a command-line client for the DownloadStation application found on Synology storage devices. It allows you to comfortably manage your download tasks from within a terminal window rather than going through the built-in web interface.
 
 ![synodl](https://raw.githubusercontent.com/cockroach/synodl/media/screenshot.png "synodl 0.1.0")
 
