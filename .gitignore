@@ -11,6 +11,12 @@ depcomp
 install-sh
 missing
 src/synodl
-src/*.o
-src/.deps/
+*.o
+.deps/
 stamp-h1
+*.log
+*.trs
+*-Results.xml
+test_ui_util
+.dirstamp
+test-driver

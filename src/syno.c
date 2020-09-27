@@ -18,7 +18,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
+#include <stdio.h>
 #include <string.h>
+
 #include <curl/curl.h>
 
 #include "config.h"
@@ -31,14 +33,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <json/json_tokener.h>
 #endif
 
+#include "curl.h"
 #include "syno.h"
 #include "ui.h"
-
-struct string
-{
-	int size;
-	char *ptr;
-};
 
 static int
 init_string(struct string *s)
@@ -112,7 +109,7 @@ json_load_tasks(json_object *obj, void (*cb)(struct task *))
 {
 	json_object *data, *tasks, *task, *tmp, *additional, *transfer;
 	struct task dt;
-	int i;
+	unsigned int i;
 
 	if (json_check_success(obj) != 0)
 	{
@@ -138,7 +135,7 @@ json_load_tasks(json_object *obj, void (*cb)(struct task *))
 		return 1;
 	}
 
-	for (i=0; i < json_object_array_length(tasks); i++)
+	for (i=0; i < (size_t) json_object_array_length(tasks); i++)
 	{
 		memset(&dt, 0, sizeof(struct task));
 
@@ -290,74 +287,11 @@ parse_reply(struct string *st)
 }
 
 /*
- * cURL helpers
- */
-
-static size_t
-curl_recv(void *ptr, size_t size, size_t nmemb, struct string *s)
-{
-	int pos;
-
-	pos = s->size - 1;
-	s->size += (size * nmemb);
-	s->ptr = realloc(s->ptr, s->size);
-
-	if (!s->ptr)
-	{
-		fprintf(stderr, "Realloc failed");
-		return -1;
-	}
-
-	memcpy(s->ptr + pos, ptr, size * nmemb);
-	s->ptr[s->size - 1] = 0;
-	return size * nmemb;
-}
-
-static int
-curl_do(const char *url, void *cb_arg, struct string *st)
-{
-	CURL *curl;
-	CURLcode res;
-
-	curl_global_init(CURL_GLOBAL_DEFAULT);
-	curl = curl_easy_init();
-
-	if (!curl)
-	{
-		fprintf(stderr, "Failed to initialize CURL\n");
-		curl_global_cleanup();
-		return 1;
-	}
-
-	curl_easy_setopt(curl, CURLOPT_URL, url);
-	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
-	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_recv);
-	curl_easy_setopt(curl, CURLOPT_WRITEDATA, st);
-
-	res = curl_easy_perform(curl);
-
-	if (res != CURLE_OK)
-	{
-		fprintf(stderr, "curl_easy_perform() failed: %s\n",
-						curl_easy_strerror(res));
-		curl_easy_cleanup(curl);
-		curl_global_cleanup();
-		return 1;
-	}
-
-	curl_easy_cleanup(curl);
-	curl_global_cleanup();
-
-	return 0;
-}
-
-/*
  * "public" functions
  */
 
 int
-syno_login(const char *base, struct session *s, const char *u, const char *pw)
+syno_login(struct cfg *cfg, struct session *s)
 {
 	char url[1024];
 	struct string st;
@@ -368,9 +302,10 @@ syno_login(const char *base, struct session *s, const char *u, const char *pw)
 
 	snprintf(url, sizeof(url), "%s/webapi/auth.cgi?api=SYNO.API.Auth"
 		"&version=2&method=login&account=%s&passwd=%s"
-		"&session=DownloadStation&format=sid", base, u, pw);
+		"&session=DownloadStation&format=sid",
+		cfg->url, cfg->user, cfg->pw);
 
-	if (curl_do(url, s, &st) != 0)
+	if (curl_do(url, cfg, &st) != 0)
 	{
 		fprintf(stderr, "Login failed\n");
 		free_string(&st);
@@ -396,7 +331,7 @@ syno_login(const char *base, struct session *s, const char *u, const char *pw)
 }
 
 int
-syno_logout(const char *base, struct session *s)
+syno_logout(struct cfg *cfg, struct session *s)
 {
 	char url[1024];
 	int res;
@@ -406,9 +341,9 @@ syno_logout(const char *base, struct session *s)
 
 	snprintf(url, sizeof(url), "%s/webapi/auth.cgi?api=SYNO.API.Auth"
 		"&version=1&method=logout&session=DownloadStation"
-		"&_sid=%s", base, s->sid);
+		"&_sid=%s", cfg->url, s->sid);
 
-	if (curl_do(url, s, &st) != 0)
+	if (curl_do(url, cfg, &st) != 0)
 	{
 		free_string(&st);
 		return 1;
@@ -420,7 +355,7 @@ syno_logout(const char *base, struct session *s)
 }
 
 int
-syno_list(const char *base, struct session *s, void (*cb)(struct task *))
+syno_list(struct cfg *cfg, struct session *s, void (*cb)(struct task *))
 {
 	char url[1024];
 	int res;
@@ -431,9 +366,9 @@ syno_list(const char *base, struct session *s, void (*cb)(struct task *))
 	snprintf(url, sizeof(url), "%s/webapi/DownloadStation/task.cgi?"
 				"api=SYNO.DownloadStation.Task&version=2"
 				"&method=list&additional=transfer&_sid=%s",
-				base, s->sid);
+				cfg->url, s->sid);
 
-	if (curl_do(url, s, &st) != 0)
+	if (curl_do(url, cfg, &st) != 0)
 	{
 		free_string(&st);
 		return 1;
@@ -445,7 +380,7 @@ syno_list(const char *base, struct session *s, void (*cb)(struct task *))
 }
 
 int
-syno_download(const char *base, struct session *s, const char *dl_url)
+syno_download(struct cfg *cfg, struct session *s, const char *dl_url)
 {
 	char url[1024], *esc;
 	int res;
@@ -456,10 +391,10 @@ syno_download(const char *base, struct session *s, const char *dl_url)
 	esc = curl_escape(dl_url, strlen(dl_url));
 	snprintf(url, sizeof(url), "%s/webapi/DownloadStation/task.cgi?"
 			"api=SYNO.DownloadStation.Task&version=2&method=create"
-			"&uri=%s&_sid=%s", base, esc, s->sid);
+			"&uri=%s&_sid=%s", cfg->url, esc, s->sid);
 	curl_free(esc);
 
-	if (curl_do(url, s, &st) != 0)
+	if (curl_do(url, cfg, &st) != 0)
 	{
 		free_string(&st);
 		return 1;
@@ -471,7 +406,7 @@ syno_download(const char *base, struct session *s, const char *dl_url)
 }
 
 int
-syno_pause(const char *base, struct session *s, const char *ids)
+syno_pause(struct cfg *cfg, struct session *s, const char *ids)
 {
 	char url[1024];
 	int res;
@@ -481,10 +416,10 @@ syno_pause(const char *base, struct session *s, const char *ids)
 
 	snprintf(url, sizeof(url), "%s/webapi/DownloadStation/task.cgi?"
 				"api=SYNO.DownloadStation.Task&version=1"
-				"&method=pause&id=%s&_sid=%s", base, ids,
+				"&method=pause&id=%s&_sid=%s", cfg->url, ids,
 				s->sid);
 
-	if (curl_do(url, s, &st) != 0)
+	if (curl_do(url, cfg, &st) != 0)
 	{
 		free_string(&st);
 		return 1;
@@ -496,7 +431,7 @@ syno_pause(const char *base, struct session *s, const char *ids)
 }
 
 int
-syno_resume(const char *base, struct session *s, const char *ids)
+syno_resume(struct cfg *cfg, struct session *s, const char *ids)
 {
 	char url[1024];
 	int res;
@@ -506,10 +441,10 @@ syno_resume(const char *base, struct session *s, const char *ids)
 
 	snprintf(url, sizeof(url), "%s/webapi/DownloadStation/task.cgi?"
 				"api=SYNO.DownloadStation.Task&version=1"
-				"&method=resume&id=%s&_sid=%s", base, ids,
+				"&method=resume&id=%s&_sid=%s", cfg->url, ids,
 				s->sid);
 
-	if (curl_do(url, s, &st) != 0)
+	if (curl_do(url, cfg, &st) != 0)
 	{
 		free_string(&st);
 		return 1;
@@ -521,7 +456,7 @@ syno_resume(const char *base, struct session *s, const char *ids)
 }
 
 int
-syno_delete(const char *base, struct session *s, const char *ids)
+syno_delete(struct cfg *cfg, struct session *s, const char *ids)
 {
 	char url[1024];
 	int res;
@@ -530,11 +465,11 @@ syno_delete(const char *base, struct session *s, const char *ids)
 	init_string(&st);
 
 	snprintf(url, sizeof(url), "%s/webapi/DownloadStation/task.cgi?"
-				"api=SYNO.DownloadStation.Task&version=1"
-				"&method=delete&id=%s&_sid=%s"
-				"&force_complete=false", base, ids, s->sid);
+			"api=SYNO.DownloadStation.Task&version=1"
+			"&method=delete&id=%s&_sid=%s&force_complete=false",
+			cfg->url, ids, s->sid);
 
-	if (curl_do(url, s, &st) != 0)
+	if (curl_do(url, cfg, &st) != 0)
 	{
 		free_string(&st);
 		return 1;

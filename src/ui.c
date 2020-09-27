@@ -18,7 +18,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
-#include <math.h>
 #include <ncurses.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -31,17 +30,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "config.h"
 #include "syno.h"
 #include "ui.h"
+#include "ui-util.h"
+
+#define UNUSED __attribute__((unused))
 
 /*
 	Common
 */
-
-struct tasklist_ent
-{
-	struct task *t;
-	struct tasklist_ent *next;
-	struct tasklist_ent *prev;
-};
 
 struct tasklist_ent *tasks;
 struct tasklist_ent *nc_selected_task;
@@ -102,29 +97,6 @@ nc_status_color_off(const char *text, WINDOW *win)
 		wattroff(win, COLOR_PAIR(5)); /* red */
 }
 
-static void
-unit(double size, char *buf, ssize_t len)
-{
-	char u[] = "BkMGTPEZY";
-	unsigned int cur = 0;
-
-
-	while ((size > 1024) && (cur < strlen(u)))
-	{
-		cur += 1;
-		size /= 1024;
-	}
-
-	if (size < 10)
-	{
-		snprintf(buf, len, "%1.1f%c", roundf(size * 100) / 100, u[cur]);
-	}
-	else
-	{
-		snprintf(buf, len, "%ld%c", lround(size), u[cur]);
-	}
-}
-
 static int
 nc_status(const char *fmt, ...)
 {
@@ -152,30 +124,11 @@ nc_status_totals(int up, int dn)
 	char up_buf[32], dn_buf[32];
 	char speed[128];
 
-	unit(up, up_buf, sizeof(up_buf));
-	unit(dn, dn_buf, sizeof(dn_buf));
+	print_size(up, up_buf, sizeof(up_buf));
+	print_size(dn, dn_buf, sizeof(dn_buf));
 	snprintf(speed, sizeof(speed), "↑ %s/s, ↓ %s/s.  Press '?' for help.",
 								up_buf, dn_buf);
 	return nc_status(speed);
-}
-
-static int
-selected_position()
-{
-	int pos = 0;
-	struct tasklist_ent *tmp;
-
-	for (tmp = tasks; tmp != NULL; tmp = tmp->next)
-	{
-		if (tmp == nc_selected_task)
-		{
-			return pos;
-		}
-
-		pos += 1;
-	}
-
-	return pos;
 }
 
 static void
@@ -184,13 +137,13 @@ nc_print_tasks()
 	struct tasklist_ent *tmp;
 	struct task *t;
 	int i, tn_width, total_dn, total_up, pos, pagenum;
-	char fmt[16];
+	char fmt[32];
 	char buf[32];
 
 	i = 0;
 	total_dn = 0;
 	total_up = 0;
-	pos = selected_position();
+	pos = selected_position(tasks, nc_selected_task);
 
 	tn_width = COLS - 24;
 	snprintf(fmt, sizeof(fmt), "%%-%d.%ds", tn_width, tn_width);
@@ -216,7 +169,7 @@ nc_print_tasks()
 		mvwprintw(list, i, 1, fmt, t->fn);
 
 		/* size */
-		unit(t->size, buf, sizeof(buf));
+		print_size(t->size, buf, sizeof(buf));
 		mvwprintw(list, i, tn_width + 2, "%-5s", buf);
 
 		/* status */
@@ -393,7 +346,7 @@ nc_status_bar()
 static void
 nc_header()
 {
-	char fmt[16];
+	char fmt[32];
 	int tn_width;
 
 	if (header)
@@ -436,7 +389,7 @@ nc_task_window()
 	wrefresh(list);
 }
 
-void handle_winch(int sig)
+void handle_winch(int sig UNUSED)
 {
 	endwin();
 	refresh();
@@ -542,7 +495,7 @@ nc_task_details()
 	/* size */
 	char buf[32];
 	snprintf(buf, sizeof(buf), "%ld", t->size);
-	unit(t->size, buf, sizeof(buf));
+	print_size(t->size, buf, sizeof(buf));
 	wattron(help, A_BOLD);
 	wprintw(help, "Size      ");
 	wattroff(help, A_BOLD);
@@ -550,7 +503,7 @@ nc_task_details()
 
 	/* downloaded */
 	snprintf(buf, sizeof(buf), "%ld", t->downloaded);
-	unit(t->downloaded, buf, sizeof(buf));
+	print_size(t->downloaded, buf, sizeof(buf));
 	progress = ((double) t->downloaded / t->size);
 	wattron(help, A_BOLD);
 	wprintw(help, "Downloaded");
@@ -559,7 +512,7 @@ nc_task_details()
 
 	/* uploaded */
 	snprintf(buf, sizeof(buf), "%ld", t->uploaded);
-	unit(t->uploaded, buf, sizeof(buf));
+	print_size(t->uploaded, buf, sizeof(buf));
 	progress = ((double) t->uploaded / t->size);
 	wattron(help, A_BOLD);
 	wprintw(help, "Uploaded  ");
@@ -591,7 +544,7 @@ nc_task_details()
 }
 
 static void
-nc_delete_task(const char *base, struct session *s)
+nc_delete_task(struct cfg *cfg, struct session *s)
 {
 	WINDOW *win, *yes, *no;
 	char buf[16];
@@ -676,13 +629,13 @@ nc_delete_task(const char *base, struct session *s)
 	{
 		snprintf(buf, sizeof(buf), "%s", nc_selected_task->t->id);
 
-		if (syno_delete(base, s, buf) != 0)
+		if (syno_delete(cfg, s, buf) != 0)
 		{
 			nc_alert("Failed to delete task");
 		}
 		else
 		{
-			nc_status("Download task added");
+			nc_status("Download task deleted");
 		}
 	}
 
@@ -740,7 +693,7 @@ free_ui()
 }
 
 void
-ui_add_task(const char *base, struct session *s, const char *task)
+ui_add_task(struct cfg *cfg, struct session *s, const char *task)
 {
 	WINDOW *win, *prompt;
 	char str[1024];
@@ -780,7 +733,7 @@ ui_add_task(const char *base, struct session *s, const char *task)
 
 	if (strcmp(str, "") != 0)
 	{
-		if (syno_download(base, s, str) != 0)
+		if (syno_download(cfg, s, str) != 0)
 		{
 			nc_alert("Failed to add task");
 		}
@@ -795,7 +748,7 @@ ui_add_task(const char *base, struct session *s, const char *task)
 }
 
 void
-main_loop(const char *base, struct session *s)
+main_loop(struct cfg *cfg, struct session *s)
 {
 	int key;
 
@@ -838,12 +791,12 @@ main_loop(const char *base, struct session *s)
 		case 0x61:  /* a */
 		case 0x41:  /* A */
 			nc_status("Adding task...");
-			ui_add_task(base, s, "");
+			ui_add_task(cfg, s, "");
 			break;
 		case 0x64: /* d */
 		case 0x44:  /* D */
 			nc_status("Deleting task...");
-			nc_delete_task(base, s);
+			nc_delete_task(cfg, s);
 			break;
 		case 0x69: /* i */
 		case 0x49: /* I */
@@ -857,7 +810,7 @@ main_loop(const char *base, struct session *s)
 		case 0x52:  /* R */
 			nc_status("Refreshing...");
 			tasks_free();
-			if (syno_list(base, s, tasks_add) != 0)
+			if (syno_list(cfg, s, tasks_add) != 0)
 			{
 				nc_alert("Could not refresh data");
 			}

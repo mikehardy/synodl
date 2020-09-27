@@ -1,5 +1,5 @@
-AC_INIT([synodl], 0.2.1)
-AM_INIT_AUTOMAKE([foreign])
+AC_INIT([synodl], 0.3.0)
+AM_INIT_AUTOMAKE([foreign subdir-objects])
 AC_PROG_CC
 
 PKG_CHECK_MODULES([libjson], [json-c],
@@ -11,6 +11,18 @@ PKG_CHECK_MODULES([libjson], [json-c],
 ])
 PKG_CHECK_MODULES([libcurl], libcurl)
 PKG_CHECK_MODULES([libncursew], ncursesw)
+
+# cunit: optional
+PKG_CHECK_MODULES([CUNIT], [cunit],
+[
+	have_cunit="yes"
+],
+[
+	AC_MSG_NOTICE([CUnit not found, unit tests won't work])
+	have_cunit="no"
+])
+
+AM_CONDITIONAL([HAVE_CUNIT], [test x$have_cunit = xyes])
 
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES(Makefile src/Makefile)

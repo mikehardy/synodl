@@ -26,12 +26,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "cfg.h"
 #include "ini.h"
 
+#define UNUSED __attribute__((unused))
+#define CACERT "/etc/ssl/certs/ca-certificates.crt"
+
 static int
-config_cb(void *user, const char *s, const char *name, const char *value)
+config_cb(void *user, const char *s UNUSED, const char *name, const char *value)
 {
 	struct cfg *cf;
 
 	cf = (struct cfg *) user;
+
+	snprintf(cf->cacert, sizeof(cf->cacert), "%s", CACERT);
+	cf->verify_cert = 1;
 
 	if (!strcmp(name, "user"))
 		snprintf(cf->user, sizeof(cf->user), "%s", value);
@@ -39,6 +45,8 @@ config_cb(void *user, const char *s, const char *name, const char *value)
 		snprintf(cf->pw, sizeof(cf->pw), "%s", value);
 	else if (!strcmp(name, "url"))
 		snprintf(cf->url, sizeof(cf->url), "%s", value);
+	else if (!strcmp(name, "cacert"))
+		snprintf(cf->cacert, sizeof(cf->cacert), "%s", value);
 
 	return 1;
 }
@@ -86,8 +94,12 @@ load_config(struct cfg *config)
 	}
 	if (!strcmp(config->url, ""))
 	{
-		fprintf(stderr, "URL from configuration file\n");
+		fprintf(stderr, "URL missing from configuration file\n");
 		return 1;
+	}
+	if (!strcmp(config->cacert, "ignore"))
+	{
+		config->verify_cert = 0;
 	}
 
 	return 0;
