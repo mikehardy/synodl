@@ -544,7 +544,7 @@ nc_task_details()
 }
 
 static void
-nc_delete_task(const char *base, struct session *s)
+nc_delete_task(struct cfg *cfg, struct session *s)
 {
 	WINDOW *win, *yes, *no;
 	char buf[16];
@@ -629,13 +629,13 @@ nc_delete_task(const char *base, struct session *s)
 	{
 		snprintf(buf, sizeof(buf), "%s", nc_selected_task->t->id);
 
-		if (syno_delete(base, s, buf) != 0)
+		if (syno_delete(cfg, s, buf) != 0)
 		{
 			nc_alert("Failed to delete task");
 		}
 		else
 		{
-			nc_status("Download task added");
+			nc_status("Download task deleted");
 		}
 	}
 
@@ -693,7 +693,7 @@ free_ui()
 }
 
 void
-ui_add_task(const char *base, struct session *s, const char *task)
+ui_add_task(struct cfg *cfg, struct session *s, const char *task)
 {
 	WINDOW *win, *prompt;
 	char str[1024];
@@ -733,7 +733,7 @@ ui_add_task(const char *base, struct session *s, const char *task)
 
 	if (strcmp(str, "") != 0)
 	{
-		if (syno_download(base, s, str) != 0)
+		if (syno_download(cfg, s, str) != 0)
 		{
 			nc_alert("Failed to add task");
 		}
@@ -748,7 +748,7 @@ ui_add_task(const char *base, struct session *s, const char *task)
 }
 
 void
-main_loop(const char *base, struct session *s)
+main_loop(struct cfg *cfg, struct session *s)
 {
 	int key;
 
@@ -791,12 +791,12 @@ main_loop(const char *base, struct session *s)
 		case 0x61:  /* a */
 		case 0x41:  /* A */
 			nc_status("Adding task...");
-			ui_add_task(base, s, "");
+			ui_add_task(cfg, s, "");
 			break;
 		case 0x64: /* d */
 		case 0x44:  /* D */
 			nc_status("Deleting task...");
-			nc_delete_task(base, s);
+			nc_delete_task(cfg, s);
 			break;
 		case 0x69: /* i */
 		case 0x49: /* I */
@@ -810,7 +810,7 @@ main_loop(const char *base, struct session *s)
 		case 0x52:  /* R */
 			nc_status("Refreshing...");
 			tasks_free();
-			if (syno_list(base, s, tasks_add) != 0)
+			if (syno_list(cfg, s, tasks_add) != 0)
 			{
 				nc_alert("Could not refresh data");
 			}

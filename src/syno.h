@@ -23,6 +23,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <inttypes.h>
 
+#include "cfg.h"
+
+struct string
+{
+	int size;
+	char *ptr;
+};
+
 struct session
 {
 	char sid[128];
@@ -41,11 +49,12 @@ struct task
 	int percent_dn;
 };
 
-int syno_login(const char *b, struct session *s, const char *u, const char *p);
-int syno_list(const char *base, struct session *s, void (*cb)(struct task *));
-int syno_download(const char *base, struct session *s, const char *dl_url);
-int syno_logout(const char *base, struct session *s);
-int syno_pause(const char *base, struct session *s, const char *ids);
-int syno_resume(const char *base, struct session *s, const char *ids);
-int syno_delete(const char *base, struct session *s, const char *ids);
+int syno_login(struct cfg *, struct session *);
+int syno_list(struct cfg *, struct session *s, void (*cb)(struct task *));
+int syno_download(struct cfg *, struct session *s, const char *dl_url);
+int syno_logout(struct cfg *, struct session *s);
+int syno_pause(struct cfg *, struct session *s, const char *ids);
+int syno_resume(struct cfg *, struct session *s, const char *ids);
+int syno_delete(struct cfg *, struct session *s, const char *ids);
+
 #endif

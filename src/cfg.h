@@ -21,11 +21,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef __SYNO_DL_CFG_H
 #define __SYNO_DL_CFG_H
 
+#include "linux/limits.h"
+
 struct cfg
 {
 	char user[32];
 	char pw[32];
 	char url[64];
+	char cacert[PATH_MAX];
+	int verify_cert;
 };
 
 int load_config(struct cfg *config);

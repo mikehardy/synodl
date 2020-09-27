@@ -79,7 +79,7 @@ int main(int argc, char **argv)
 
 	memset(&s, 0, sizeof(struct session));
 
-	if (syno_login(config.url, &s, config.user, config.pw) != 0)
+	if (syno_login(&config, &s) != 0)
 	{
 		return EXIT_FAILURE;
 	}
@@ -89,12 +89,12 @@ int main(int argc, char **argv)
 	if (optind < argc)
 	{
 		url = argv[optind];
-		ui_add_task(config.url, &s, url);
+		ui_add_task(&config, &s, url);
 	}
 
-	main_loop(config.url, &s);
+	main_loop(&config, &s);
 
-	syno_logout(config.url, &s);
+	syno_logout(&config, &s);
 	free_ui();
 	tasks_free();
 

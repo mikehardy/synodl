@@ -21,12 +21,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef __SYNODL_UI_H
 #define __SYNODL_UI_H
 
+#include "cfg.h"
 #include "syno.h"
 
 void init_ui();
 void free_ui();
-void main_loop(const char *base, struct session *s);
-void ui_add_task(const char *base, struct session *s, const char *task);
+void main_loop(struct cfg *, struct session *s);
+void ui_add_task(struct cfg *, struct session *s, const char *task);
 
 void tasks_free();
 void tasks_add(struct task *t);

@@ -1,5 +1,6 @@
-== 0.2.2 (UNRELEASED) ==
+== 0.3.0 (UNRELEASED) ==
 
+* Verify SSL certificate
 * Use decimal prefixes when showing file size or transfer speed
 
 == 0.2.1 (20 Sep 2020) ==
