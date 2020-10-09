@@ -7,6 +7,10 @@ interface.
 
 ![synodl](https://code.ott.net/synodl/screenshot.png "synodl 0.1.0")
 
+## Downloading ##
+
+The official website, bug tracker etc. for synodl can be found at
+[code.ott.net/synodl](https://code.ott.net/synodl/).
 
 ## Getting started
 
