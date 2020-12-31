@@ -1,0 +1,10 @@
+build-buster:
+  image: jegopozo/linux-build:debian-buster
+  stage: build
+  variables:
+    CC: "gcc -g -std=gnu99 -Wall -Werror -Wextra -Wshadow -pedantic -Winit-self -Wswitch-default -Wswitch-enum"
+  script:
+    - ./autogen.sh
+    - ./configure
+    - make
+    - make check
