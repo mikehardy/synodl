@@ -2,7 +2,18 @@ build-buster:
   image: jegopozo/linux-build:debian-buster
   stage: build
   variables:
-    CC: "gcc -g -std=gnu99 -Wall -Werror -Wextra -Wshadow -pedantic -Winit-self -Wswitch-default -Wswitch-enum"
+    cc: "gcc -g -std=gnu99 -wall -werror -wextra -wshadow -pedantic -winit-self -wswitch-default -wswitch-enum"
+  script:
+    - ./autogen.sh
+    - ./configure
+    - make
+    - make check
+
+build-bullseye:
+  image: jegopozo/linux-build:debian-bullseye
+  stage: build
+  variables:
+    cc: "gcc -g -std=gnu99 -wall -werror -wextra -wshadow -pedantic -winit-self -wswitch-default -wswitch-enum"
   script:
     - ./autogen.sh
     - ./configure
