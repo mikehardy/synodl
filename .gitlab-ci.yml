@@ -1,21 +1,56 @@
-build-buster:
-  image: jegopozo/linux-build:debian-buster
-  stage: build
-  variables:
-    cc: "gcc -g -std=gnu99 -wall -werror -wextra -wshadow -pedantic -winit-self -wswitch-default -wswitch-enum"
-  script:
-    - ./autogen.sh
-    - ./configure
-    - make
-    - make check
+stages:
+  - build
+  - test
 
-build-bullseye:
-  image: jegopozo/linux-build:debian-bullseye
+.build: &build
   stage: build
   variables:
-    cc: "gcc -g -std=gnu99 -wall -werror -wextra -wshadow -pedantic -winit-self -wswitch-default -wswitch-enum"
+    CFLAGS: "-std=gnu99 -Wall -Werror -Wextra -Wshadow -pedantic -Winit-self -Wswitch-default -Wswitch-enum"
   script:
     - ./autogen.sh
     - ./configure
     - make
+
+.test: &test
+  stage: test
+  variables:
+    CFLAGS: "-g -std=gnu99 -Wall -Werror -Wextra -Wshadow -pedantic -Winit-self -Wswitch-default -Wswitch-enum -O0"
+  script:
+    - ./autogen.sh
+    - ./configure
+    - scan-build --status-bugs make
     - make check
+    - valgrind --leak-check=full --error-exitcode=1 ./src/test_ui_util
+
+.strech_image: &stretch
+  image: jegopozo/linux-build:debian-stretch
+
+.buster_image: &buster
+  image: jegopozo/linux-build:debian-buster
+
+.bullseye_image: &bullseye
+  image: jegopozo/linux-build:debian-bullseye
+
+stretch:build:
+  <<: *stretch
+  <<: *build
+
+stretch:test:
+  <<: *stretch
+  <<: *test
+
+buster:build:
+  <<: *buster
+  <<: *build
+
+buster:test:
+  <<: *buster
+  <<: *test
+
+bullseye:build:
+  <<: *bullseye
+  <<: *build
+
+bullseye:test:
+  <<: *bullseye
+  <<: *test
