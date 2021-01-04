@@ -216,7 +216,6 @@ test_prefix_eb()
 	char buf[32];
 
 	print_size(4300000000000000000, buf, sizeof(buf));
-	fprintf(stderr, "SIZE = %s\n", buf);
 	CU_ASSERT_STRING_EQUAL(buf, "4.3E");
 }
 

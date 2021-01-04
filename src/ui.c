@@ -859,6 +859,7 @@ tasks_add(struct task *t)
 
 	if (!ent->t)
 	{
+		free(ent);
 		fprintf(stderr, "Malloc failed\n");
 		return;
 	}
