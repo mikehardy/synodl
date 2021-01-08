@@ -2,6 +2,17 @@ stages:
   - build
   - test
 
+
+.strech_image: &stretch
+  image: registry.gitlab.com/schabe/synodl:debian-stretch
+
+.buster_image: &buster
+  image: registry.gitlab.com/schabe/synodl:debian-buster
+
+.bullseye_image: &bullseye
+  image: registry.gitlab.com/schabe/synodl:debian-bullseye
+
+
 .build: &build
   stage: build
   variables:
@@ -33,14 +44,6 @@ stages:
     - make check
     - gcovr -r src/
 
-.strech_image: &stretch
-  image: jegopozo/linux-build:debian-stretch
-
-.buster_image: &buster
-  image: jegopozo/linux-build:debian-buster
-
-.bullseye_image: &bullseye
-  image: jegopozo/linux-build:debian-bullseye
 
 stretch:build:
   <<: *stretch
