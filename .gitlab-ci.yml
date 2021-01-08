@@ -22,6 +22,17 @@ stages:
     - make check
     - valgrind --leak-check=full --error-exitcode=1 ./src/test_ui_util
 
+.coverage: &coverage
+  stage: test
+  variables:
+    CFLAGS: "-fprofile-arcs -ftest-coverage -fPIC -O0"
+  script:
+    - ./autogen.sh
+    - ./configure
+    - make
+    - make check
+    - gcovr -r src/
+
 .strech_image: &stretch
   image: jegopozo/linux-build:debian-stretch
 
@@ -54,3 +65,7 @@ bullseye:build:
 bullseye:test:
   <<: *bullseye
   <<: *test
+
+coverage:
+  <<: *bullseye
+  <<: *coverage
