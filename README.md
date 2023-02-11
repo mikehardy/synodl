@@ -28,6 +28,15 @@ Calling `synodl` without any additional arguments should show an overview of
 your current download tasks.  Anything that is passed as a parameter will be
 added as a task to DownloadStation.
 
+## Secure password
+
+You can keep your password in a secure location if you specify a
+`password_command` instead of a `password` in the config file:
+
+```
+password_command = gpg --decrypt ~/.synodl.pw
+```
+
 ## SSL certificate
 
 With the default configuration, synodl will try to verify your SSL certificate
