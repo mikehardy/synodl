@@ -1,3 +1,8 @@
+== 0.4.0 (11 Feb 2023) ==
+
+* Add ability to load password from command output
+* Correctly load CA certificate config option
+
 == 0.3.1 (4 Jan 2021) ==
 
 * Fix a small potential memory leak
