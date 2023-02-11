@@ -69,7 +69,7 @@ load_config(struct cfg *config)
 
 	/* default values */
 	snprintf(config->cacert, sizeof(config->cacert), "%s", CACERT);
-	cf->verify_cert = 1;
+	config->verify_cert = 1;
 
 	res = ini_parse(fn, config_cb, config);
 
