@@ -36,9 +36,6 @@ config_cb(void *user, const char *s UNUSED, const char *name, const char *value)
 
 	cf = (struct cfg *) user;
 
-	snprintf(cf->cacert, sizeof(cf->cacert), "%s", CACERT);
-	cf->verify_cert = 1;
-
 	if (!strcmp(name, "user"))
 		snprintf(cf->user, sizeof(cf->user), "%s", value);
 	else if (!strcmp(name, "password"))
@@ -69,6 +66,11 @@ load_config(struct cfg *config)
 	homedir = pw->pw_dir;
 
 	snprintf(fn, sizeof(fn), "%s/.synodl", homedir);
+
+	/* default values */
+	snprintf(config->cacert, sizeof(config->cacert), "%s", CACERT);
+	cf->verify_cert = 1;
+
 	res = ini_parse(fn, config_cb, config);
 
 	if (res == -1)
