@@ -29,6 +29,29 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define UNUSED __attribute__((unused))
 #define CACERT "/etc/ssl/certs/ca-certificates.crt"
 
+static void
+load_password(const char *cmd, char *buf, size_t len)
+{
+	FILE *f;
+	char *c;
+
+	f = popen(cmd, "r");
+	if (!f)
+	{
+		perror(cmd);
+		return;
+	}
+
+	fread(buf, len, 1, f);
+
+	/* strip line break + any further output */
+	c = strchr(buf, '\n');
+	if (c)
+	{
+		*c = 0;
+	}
+}
+
 static int
 config_cb(void *user, const char *s UNUSED, const char *name, const char *value)
 {
@@ -36,13 +59,12 @@ config_cb(void *user, const char *s UNUSED, const char *name, const char *value)
 
 	cf = (struct cfg *) user;
 
-	snprintf(cf->cacert, sizeof(cf->cacert), "%s", CACERT);
-	cf->verify_cert = 1;
-
 	if (!strcmp(name, "user"))
 		snprintf(cf->user, sizeof(cf->user), "%s", value);
 	else if (!strcmp(name, "password"))
 		snprintf(cf->pw, sizeof(cf->pw), "%s", value);
+	else if (!strcmp(name, "password_command"))
+		load_password(value, cf->pw, sizeof(cf->pw));
 	else if (!strcmp(name, "url"))
 		snprintf(cf->url, sizeof(cf->url), "%s", value);
 	else if (!strcmp(name, "cacert"))
@@ -69,6 +91,11 @@ load_config(struct cfg *config)
 	homedir = pw->pw_dir;
 
 	snprintf(fn, sizeof(fn), "%s/.synodl", homedir);
+
+	/* default values */
+	snprintf(config->cacert, sizeof(config->cacert), "%s", CACERT);
+	config->verify_cert = 1;
+
 	res = ini_parse(fn, config_cb, config);
 
 	if (res == -1)

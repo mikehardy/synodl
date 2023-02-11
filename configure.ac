@@ -1,4 +1,4 @@
-AC_INIT([synodl], 0.3.1)
+AC_INIT([synodl], 0.4.0)
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 AC_PROG_CC
 
