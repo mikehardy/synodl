@@ -1,0 +1,23 @@
+[package]
+name = "synodl"
+version = "0.5.0"
+edition = "2021"
+homepage = "https://code.ott.net/synodl"
+readme = "README.md"
+authors = ["Stefan Ott"]
+license = "GPL-3.0-only.txt"
+keywords = ["download", "torrent", "synology", "nas"]
+categories = ["command-line-utilities"]
+
+[dependencies]
+crossterm = "0.26.0"
+dirs = "4.0"
+serde = { version = "1.0.152", features = ["derive"] }
+serde_ini = "0.2.0"
+serde_json = "1.0"
+subprocess = "0.2.9"
+tui = "0.19.0"
+byte-unit = "4.0"
+curl = "0.4.44"
+url = "2.3.1"
+clap = { version = "4.0", features = ["derive"] }
