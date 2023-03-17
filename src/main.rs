@@ -22,8 +22,8 @@ mod syno;
 
 extern crate dirs;
 
-use std::{io, io::{Error, ErrorKind}, fs, error, path::Path, cmp::min};
-use clap::Parser;
+use std::{io, io::{Error, ErrorKind}, fs, error, path::Path, cmp::min, env};
+use getopts::Options;
 use crossterm::{
     event::{self, Event, KeyCode},
     execute,
@@ -77,13 +77,6 @@ pub struct Config {
     password: Option<String>,
     password_command: Option<String>,
     cacert: Option<String>
-}
-
-#[derive(Parser)]
-#[command(version)]
-struct Args {
-    /// URL to download. Leave empty to start TUI mode.
-    url: Option<String>,
 }
 
 impl App {
@@ -321,9 +314,41 @@ fn run_tui(cfg: Config, session: Session) -> Result<(), Box<dyn error::Error>> {
     Ok(())
 }
 
-fn main() -> Result<(), Box<dyn error::Error>> {
-    let args = Args::parse();
+fn print_usage(program: &str, opts: Options) {
+    let brief = format!("Usage: {} URL [options]\n
+If URL is empty a list of current download tasks is shown,
+otherwise the URL is added as a download task.", program);
+    print!("{}", opts.usage(&brief));
 
+    println!("\nThis is synodl {}.", env!("CARGO_PKG_VERSION"));
+    println!("Report bugs at {}", env!("CARGO_PKG_HOMEPAGE"));
+}
+
+fn main() -> Result<(), Box<dyn error::Error>> {
+
+    /* load command line arguments */
+    let args: Vec<String> = env::args().collect();
+
+    let program = args[0].clone();
+    let mut opts = Options::new();
+
+    opts.optflag("h", "help", "Print help");
+    let matches = match opts.parse(&args[1..]) {
+        Ok(m) => { m }
+        Err(f) => { panic!("{}", f.to_string()) }
+    };
+
+    if matches.opt_present("h") {
+        print_usage(&program, opts);
+        return Ok(());
+    }
+
+    let add_url = match matches.free.len() {
+        0 => None,
+        _ => Some(matches.free[0].clone())
+    };
+
+    /* load configuration */
     let mut path = dirs::home_dir().expect("Cannot find your home directory");
     path.push(".synodl");
 
@@ -334,6 +359,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 
     let cfg = load_config(path.as_path())?;
 
+    /* start operation */
     println!("Connecting to {} ...", cfg.url);
     let session = match syno_login(&cfg) {
         Ok(s) => s,
@@ -343,15 +369,10 @@ fn main() -> Result<(), Box<dyn error::Error>> {
         }
     };
 
-    match args.url {
-        None => {
-            run_tui(cfg, session)
-        },
-        Some(url) => {
-            add_task(cfg, session, url)
-        }
+    match add_url {
+        None => run_tui(cfg, session),
+        Some(url) => add_task(cfg, session, url)
     }
-
 }
 
 fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App,
