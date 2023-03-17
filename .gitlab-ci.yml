@@ -1,0 +1,59 @@
+stages:
+  - build
+  - test
+  - coverage
+
+
+.bullseye_image: &bullseye
+  image: registry.gitlab.com/schabe/synodl:debian-bullseye
+
+.bookworm_image: &bullseye
+  image: registry.gitlab.com/schabe/synodl:debian-bookwork
+
+
+.build: &build
+  stage: build
+  script:
+    - make
+
+.test: &test
+  stage: test
+  script:
+    - cargo test
+
+.coverage: &coverage
+  stage: test
+  variables:
+    CARGO_INCREMENTAL: "0"
+    RUSTFLAGS: "-Cinstrument-coverage"
+  script:
+    - cargo test
+    - grcov . --binary-path ./target/debug/deps/ -s . -t cobertura --branch -o coverage.xml --llvm-path=/usr/bin
+
+
+bullseye:build:
+  <<: *bullseye
+  <<: *build
+
+bullseye:test:
+  <<: *bullseye
+  <<: *test
+
+bookworm:build:
+  <<: *bookworm
+  <<: *build
+
+bookworm:test:
+  <<: *bookworm
+  <<: *test
+
+bookworm:coverage:
+  <<: *bookworm
+  <<: *coverage
+
+
+artifacts:
+  reports:
+    coverage_report:
+      coverage_format: cobertura
+      path: coverage.xml
