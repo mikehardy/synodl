@@ -16,14 +16,105 @@ class AuthHandler(RequestHandler):
 
 		method = self.get_argument('method')
 		if method == 'login':
-			data['sid'] = 1
+			data['sid'] = '1'
 
 		res['data'] = data
 		self.write(json.dumps(res))
 
 class TaskHandler(RequestHandler):
 
-	tasks = []
+	tasks = [{
+		"id": "0",
+		"title": "debian-8.6.0-amd64-netinst.iso",
+		"status": "downloading",
+		"size": 258998272,
+		"additional": {
+			"transfer": {
+				"size_downloaded": 158998272,
+				"speed_download": 121021,
+                "speed_upload": 0,
+				"size_uploaded": 0
+			}
+		}
+	},{
+		"id": "1",
+		"title": "Slackware 14.2 x86_64 DVD ISO",
+		"status": "paused",
+		"size": 2770253906,
+		"additional": {
+			"transfer": {
+				"size_downloaded": 770253906,
+                "speed_download": 0,
+                "speed_upload": 0,
+				"size_uploaded": 0
+			}
+		}
+	},{
+		"id": "2",
+		"title": "archbang-011215-i686.iso",
+		"status": "seeding",
+		"size": 456130560,
+		"additional": {
+			"transfer": {
+				"size_downloaded": 456130560,
+                "speed_download": 0,
+				"size_uploaded": 406130560,
+				"speed_upload": 83923
+			}
+		}
+	},{
+		"id": "3",
+		"title": "robolinux64-live-mate-v8.1",
+		"status": "seeding",
+		"size": 1964947537,
+		"additional": {
+			"transfer": {
+				"size_downloaded": 1964947537,
+                "speed_download": 0,
+				"size_uploaded": 0,
+				"speed_upload": 923
+			}
+		}
+	},{
+		"id": "4",
+		"title": "KNOPPIX 7.2.0 DVD",
+		"status": "finished",
+		"size": 4112431185,
+		"additional": {
+			"transfer": {
+				"size_downloaded": 4112431185,
+                "speed_download": 0,
+                "speed_upload": 0,
+				"size_uploaded": 0
+			}
+		}
+	},{
+		"id": "5",
+		"title": "ubuntu-15.04-desktop-amd64.iso",
+		"status": "finished",
+		"size": 1148903751,
+		"additional": {
+			"transfer": {
+				"size_downloaded": 1148903751,
+                "speed_download": 0,
+                "speed_upload": 0,
+				"size_uploaded": 0
+			}
+		}
+	},{
+		"id": "6",
+		"title": "Peppermint-7-20160616-amd64.iso",
+		"status": "finished",
+		"size": 1105954078,
+		"additional": {
+			"transfer": {
+				"size_downloaded": 1105954078,
+                "speed_download": 0,
+                "speed_upload": 0,
+				"size_uploaded": 0
+			}
+		}
+	}]
 
 	def get(self):
 
@@ -38,7 +129,7 @@ class TaskHandler(RequestHandler):
 
 		if method == 'create':
 			task = {}
-			task['id'] = len(self.tasks)
+			task['id'] = str(len(self.tasks))
 			task['title'] = self.get_argument('uri')
 			task['status'] = 'downloading'
 			task['size'] = 1234
@@ -56,6 +147,7 @@ class TaskHandler(RequestHandler):
 			del(self.tasks[id])
 		elif method == 'list':
 			data['tasks'] = self.tasks
+			data['offset'] = 0
 
 		res['data'] = data
 		self.write(json.dumps(res))
