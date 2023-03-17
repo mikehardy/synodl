@@ -9,7 +9,7 @@ all:
 dist: synodl-$(VERSION).tar.gz
 
 synodl-%.tar.gz: $(DIST_FILES)
-	tar czf $@ $^
+	tar czf $@ --transform 's:^:synodl-$(VERSION)/:' $^
 
 .PHONY: clean
 clean:
