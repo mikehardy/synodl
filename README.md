@@ -9,8 +9,7 @@ interface.
 
 ## Downloading ##
 
-The official website, bug tracker etc. for synodl can be found at
-[code.ott.net/synodl](https://code.ott.net/synodl/).
+You can download synodl from [code.ott.net/synodl](https://code.ott.net/synodl/).
 
 ## Getting started
 
