@@ -15,3 +15,16 @@ synodl-%.tar.gz: $(DIST_FILES)
 clean:
 	rm -f synodl-*.tar.gz
 	cargo clean
+
+.PHONY: check
+check:
+	cargo test
+
+.PHONY: coverage
+coverage:
+	CARGO_INCREMENTAL=0 RUSTFLAGS='-Cinstrument-coverage' \
+			  LLVM_PROFILE_FILE='cargo-test-%p-%m.profraw' \
+			  cargo test
+	grcov . --binary-path ./target/debug/deps/ -s . -t html --branch \
+		-o target/coverage \
+		--llvm-path=/usr/bin
