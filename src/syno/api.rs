@@ -17,15 +17,26 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
-use std::{error, fs::File, io::{self, ErrorKind, BufReader}};
+use std::{error, io::{self, ErrorKind}};
 
 use url::Url;
 use serde::{Deserialize, Serialize};
-use std::iter;
-use rustls_pemfile::{Item, read_one};
-use rustls::{self, ClientConfig, RootCertStore, ServerName, Certificate, client::{ServerCertVerifier, ServerCertVerified}};
+use rustls::{self, ClientConfig, RootCertStore, Certificate};
+
+#[cfg(feature = "custom_ca")]
+use {
+    std::{iter, fs::File, io::BufReader},
+    rustls_pemfile::{Item, read_one}
+};
+
+#[cfg(feature = "insecure_tls")]
+use {
+    std::time::SystemTime,
+    rustls::client::{ServerCertVerifier, ServerCertVerified},
+    rustls::ServerName
+};
+
 use std::sync::Arc;
-use std::time::SystemTime;
 
 use crate::{
     Task, Config
@@ -102,6 +113,7 @@ fn tls_default() -> Result<ClientConfig, Box<dyn error::Error>>
     Ok(cfg)
 }
 
+#[cfg(feature = "custom_ca")]
 fn tls_custom_cert(path: &String) -> Result<ClientConfig, Box<dyn error::Error>>
 {
     let mut root_store = RootCertStore::empty();
@@ -133,7 +145,14 @@ fn tls_custom_cert(path: &String) -> Result<ClientConfig, Box<dyn error::Error>>
         .with_no_client_auth();
     Ok(cfg)
 }
+#[cfg(not(feature = "custom_ca"))]
+fn tls_custom_cert(_path: &String) -> Result<ClientConfig, Box<dyn error::Error>>
+{
+    Err(Box::new(io::Error::new(ErrorKind::Other,
+        "Please enable 'custom_ca' feature to specify your own CA certificate")))
+}
 
+#[cfg(feature = "insecure_tls")]
 fn tls_ignore_cert() -> Result<ClientConfig, Box<dyn error::Error>>
 {
     struct DummyVerifier { }
@@ -166,6 +185,12 @@ fn tls_ignore_cert() -> Result<ClientConfig, Box<dyn error::Error>>
         .with_no_client_auth();
 
     Ok(cfg)
+}
+#[cfg(not(feature = "insecure_tls"))]
+fn tls_ignore_cert() -> Result<ClientConfig, Box<dyn error::Error>>
+{
+    Err(Box::new(io::Error::new(ErrorKind::Other,
+        "Please enable 'insecure_tls' feature to ignore the CA certificate")))
 }
 
 

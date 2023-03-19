@@ -21,6 +21,11 @@ byte-unit = "4.0"
 ureq = { version = "2.6.2", features = ["rustls", "native-certs"] }
 url = "2.3.1"
 getopts = "0.2"
-rustls = { version="0.20.8", features=["dangerous_configuration"] }
-rustls-pemfile = "*"
-rustls-native-certs = "*"
+rustls = "0.20.8"
+rustls-pemfile = {version = "*", optional = true}
+rustls-native-certs = {version = "*"}
+
+[features]
+default = ["custom_ca"]
+insecure_tls = ["rustls/dangerous_configuration"]
+custom_ca = ["dep:rustls-pemfile"]
