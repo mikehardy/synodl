@@ -16,6 +16,8 @@ stages:
 .test: &test
   stage: test
   script:
+    - cargo update -p predicates-tree --precise 1.0.7
+    - cargo update -p predicates-core --precise 1.0.5
     - cargo test
 
 .coverage: &coverage
