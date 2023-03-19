@@ -17,11 +17,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
-use std::{error, fs::File, io::{prelude::*, Error, ErrorKind}};
+use std::{error, fs::File, io::{self, ErrorKind, BufReader}};
 
 use url::Url;
-use curl::easy::Easy;
 use serde::{Deserialize, Serialize};
+use std::iter;
+use rustls_pemfile::{Item, read_one};
+use rustls::{self, ClientConfig, RootCertStore, ServerName, Certificate, client::{ServerCertVerifier, ServerCertVerified}};
+use std::sync::Arc;
+use std::time::SystemTime;
 
 use crate::{
     Task, Config
@@ -80,42 +84,119 @@ struct TaskListResponse {
 }
 
 
-fn syno_do(url: &Url, cfg: &Config) -> Result<String, Error>
+fn tls_default() -> Result<ClientConfig, Box<dyn error::Error>>
 {
-    let mut easy = Easy::new();
-    easy.url(&url.as_str())?;
-
-    match &cfg.cacert {
-        Some(f) => {
-            if f == "ignore" {
-                easy.ssl_verify_peer(false)?;
-            } else {
-                let mut buf = Vec::new();
-                File::open(f)?
-                    .read_to_end(&mut buf)?;
-                easy.ssl_cainfo_blob(&buf)?;
-            }
-        }
-        None => {}
-    };
-
-    let mut buf = Vec::new();
-    {
-        let mut transfer = easy.transfer();
-        transfer.write_function(|data| {
-            buf.extend_from_slice(data);
-            Ok(data.len())
-        }).unwrap();
-        transfer.perform()?;
+    let mut root_store = RootCertStore::empty();
+    let certs = rustls_native_certs::load_native_certs().expect("Could not load platform certs");
+    for cert in certs {
+        let rustls_cert = Certificate(cert.0);
+        root_store
+            .add(&rustls_cert)
+            .expect("Failed to add native certificate to root store");
     }
 
-    let res = String::from_utf8(buf).unwrap();
+    let cfg = ClientConfig::builder()
+        .with_safe_defaults()
+        .with_root_certificates(root_store)
+        .with_no_client_auth();
+    Ok(cfg)
+}
+
+fn tls_custom_cert(path: &String) -> Result<ClientConfig, Box<dyn error::Error>>
+{
+    let mut root_store = RootCertStore::empty();
+    let certs = rustls_native_certs::load_native_certs().expect("Could not load platform certs");
+    for cert in certs {
+        let rustls_cert = Certificate(cert.0);
+        root_store
+            .add(&rustls_cert)
+            .expect("Failed to add native certificate to root store");
+    }
+
+    let mut f = File::open(path)?;
+    let mut crt = BufReader::new(&mut f);
+    for item in iter::from_fn(|| read_one(&mut crt).transpose()) {
+        match item.unwrap() {
+            Item::X509Certificate(cert) => {
+                let xx = Certificate(cert);
+                root_store
+                    .add(&xx)
+                    .expect("Failed to add native certificate to root store");
+            },
+            _ => println!("unhandled item"),
+        }
+    }
+
+    let cfg = ClientConfig::builder()
+        .with_safe_defaults()
+        .with_root_certificates(root_store)
+        .with_no_client_auth();
+    Ok(cfg)
+}
+
+fn tls_ignore_cert() -> Result<ClientConfig, Box<dyn error::Error>>
+{
+    struct DummyVerifier { }
+
+    impl DummyVerifier {
+        fn new() -> Self {
+            DummyVerifier { }
+        }
+    }
+
+    impl ServerCertVerifier for DummyVerifier {
+        fn verify_server_cert(
+            &self,
+            _: &Certificate,
+            _: &[Certificate],
+            _: &ServerName,
+            _: &mut dyn Iterator<Item = &[u8]>,
+            _: &[u8],
+            _: SystemTime
+        ) -> Result<ServerCertVerified, rustls::Error> {
+            return Ok(ServerCertVerified::assertion());
+        }
+    }
+
+    let dummy_verifier = Arc::new(DummyVerifier::new());
+
+    let cfg = ClientConfig::builder()
+        .with_safe_defaults()
+        .with_custom_certificate_verifier(dummy_verifier)
+        .with_no_client_auth();
+
+    Ok(cfg)
+}
+
+
+fn syno_do(url: &Url, cfg: &Config) -> Result<String, Box<dyn error::Error>>
+{
+    let tls_config = match &cfg.cacert {
+        Some(f) => {
+            if f == "ignore" {
+                tls_ignore_cert()?
+            } else {
+                tls_custom_cert(f)?
+            }
+        }
+        None => tls_default()?
+    };
+
+    let agent = ureq::AgentBuilder::new()
+        .tls_config(Arc::new(tls_config))
+        .build();
+
+    let res = agent
+        .request_url("GET", &url)
+        .call()?
+        .into_string()?;
+
     let syno = serde_json::from_str::<SynoResponse>(&res);
     let success = match syno {
         Ok(res) => res.success,
         Err(e) => {
             println!("Failed to load JSON response: {}", res);
-            return Err(Error::new(ErrorKind::InvalidData, e))
+            return Err(Box::new(e))
         }
     };
 
@@ -124,7 +205,7 @@ fn syno_do(url: &Url, cfg: &Config) -> Result<String, Error>
         false => {
             eprintln!("API request failed: {}", url);
             eprintln!("Response was: {}", res);
-            Err(Error::new(ErrorKind::Other, "API request failed"))
+            Err(Box::new(io::Error::new(ErrorKind::Other, "API request failed")))
         }
     }
 }

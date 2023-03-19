@@ -18,6 +18,9 @@ serde_json = "1.0"
 subprocess = "0.2.9"
 tui = "0.19.0"
 byte-unit = "4.0"
-curl = "0.4.44"
+ureq = { version = "2.6.2", features = ["rustls", "native-certs"] }
 url = "2.3.1"
 getopts = "0.2"
+rustls = { version="0.20.8", features=["dangerous_configuration"] }
+rustls-pemfile = "*"
+rustls-native-certs = "*"

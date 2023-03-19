@@ -20,9 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 mod ui;
 mod syno;
 
-extern crate dirs;
-
 use std::{io, io::{Error, ErrorKind}, fs, error, path::Path, cmp::min, env};
+use dirs::home_dir;
 use getopts::Options;
 use crossterm::{
     event::{self, Event, KeyCode},
@@ -349,7 +348,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
     };
 
     /* load configuration */
-    let mut path = dirs::home_dir().expect("Cannot find your home directory");
+    let mut path = home_dir().expect("Cannot find your home directory");
     path.push(".synodl");
 
     if !path.exists() {
