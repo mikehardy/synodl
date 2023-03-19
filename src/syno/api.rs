@@ -17,26 +17,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
-use std::{error, io::{self, ErrorKind}};
+use std::{error, io::{self, ErrorKind}, sync::Arc};
 
 use url::Url;
 use serde::{Deserialize, Serialize};
-use rustls::{self, ClientConfig, RootCertStore, Certificate};
-
-#[cfg(feature = "custom_ca")]
-use {
-    std::{iter, fs::File, io::BufReader},
-    rustls_pemfile::{Item, read_one}
-};
-
-#[cfg(feature = "insecure_tls")]
-use {
-    std::time::SystemTime,
-    rustls::client::{ServerCertVerifier, ServerCertVerified},
-    rustls::ServerName
-};
-
-use std::sync::Arc;
+use crate::syno::tls::get_tls_config;
 
 use crate::{
     Task, Config
@@ -95,117 +80,9 @@ struct TaskListResponse {
 }
 
 
-fn tls_default() -> Result<ClientConfig, Box<dyn error::Error>>
-{
-    let mut root_store = RootCertStore::empty();
-    let certs = rustls_native_certs::load_native_certs().expect("Could not load platform certs");
-    for cert in certs {
-        let rustls_cert = Certificate(cert.0);
-        root_store
-            .add(&rustls_cert)
-            .expect("Failed to add native certificate to root store");
-    }
-
-    let cfg = ClientConfig::builder()
-        .with_safe_defaults()
-        .with_root_certificates(root_store)
-        .with_no_client_auth();
-    Ok(cfg)
-}
-
-#[cfg(feature = "custom_ca")]
-fn tls_custom_cert(path: &String) -> Result<ClientConfig, Box<dyn error::Error>>
-{
-    let mut root_store = RootCertStore::empty();
-    let certs = rustls_native_certs::load_native_certs().expect("Could not load platform certs");
-    for cert in certs {
-        let rustls_cert = Certificate(cert.0);
-        root_store
-            .add(&rustls_cert)
-            .expect("Failed to add native certificate to root store");
-    }
-
-    let mut f = File::open(path)?;
-    let mut crt = BufReader::new(&mut f);
-    for item in iter::from_fn(|| read_one(&mut crt).transpose()) {
-        match item.unwrap() {
-            Item::X509Certificate(cert) => {
-                let xx = Certificate(cert);
-                root_store
-                    .add(&xx)
-                    .expect("Failed to add native certificate to root store");
-            },
-            _ => println!("unhandled item"),
-        }
-    }
-
-    let cfg = ClientConfig::builder()
-        .with_safe_defaults()
-        .with_root_certificates(root_store)
-        .with_no_client_auth();
-    Ok(cfg)
-}
-#[cfg(not(feature = "custom_ca"))]
-fn tls_custom_cert(_path: &String) -> Result<ClientConfig, Box<dyn error::Error>>
-{
-    Err(Box::new(io::Error::new(ErrorKind::Other,
-        "Please enable 'custom_ca' feature to specify your own CA certificate")))
-}
-
-#[cfg(feature = "insecure_tls")]
-fn tls_ignore_cert() -> Result<ClientConfig, Box<dyn error::Error>>
-{
-    struct DummyVerifier { }
-
-    impl DummyVerifier {
-        fn new() -> Self {
-            DummyVerifier { }
-        }
-    }
-
-    impl ServerCertVerifier for DummyVerifier {
-        fn verify_server_cert(
-            &self,
-            _: &Certificate,
-            _: &[Certificate],
-            _: &ServerName,
-            _: &mut dyn Iterator<Item = &[u8]>,
-            _: &[u8],
-            _: SystemTime
-        ) -> Result<ServerCertVerified, rustls::Error> {
-            return Ok(ServerCertVerified::assertion());
-        }
-    }
-
-    let dummy_verifier = Arc::new(DummyVerifier::new());
-
-    let cfg = ClientConfig::builder()
-        .with_safe_defaults()
-        .with_custom_certificate_verifier(dummy_verifier)
-        .with_no_client_auth();
-
-    Ok(cfg)
-}
-#[cfg(not(feature = "insecure_tls"))]
-fn tls_ignore_cert() -> Result<ClientConfig, Box<dyn error::Error>>
-{
-    Err(Box::new(io::Error::new(ErrorKind::Other,
-        "Please enable 'insecure_tls' feature to ignore the CA certificate")))
-}
-
-
 fn syno_do(url: &Url, cfg: &Config) -> Result<String, Box<dyn error::Error>>
 {
-    let tls_config = match &cfg.cacert {
-        Some(f) => {
-            if f == "ignore" {
-                tls_ignore_cert()?
-            } else {
-                tls_custom_cert(f)?
-            }
-        }
-        None => tls_default()?
-    };
+    let tls_config = get_tls_config(cfg)?;
 
     let agent = ureq::AgentBuilder::new()
         .tls_config(Arc::new(tls_config))
