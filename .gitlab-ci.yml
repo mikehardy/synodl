@@ -1,0 +1,44 @@
+stages:
+  - build
+  - test
+  - coverage
+
+
+.bookworm_image: &bookworm
+  image: registry.gitlab.com/schabe/synodl:debian-bookworm
+
+
+.build: &build
+  stage: build
+  script:
+    - cargo build
+
+.test: &test
+  stage: test
+  script:
+    - cargo update -p predicates-tree --precise 1.0.7
+    - cargo update -p predicates-core --precise 1.0.5
+    - cargo test
+
+.coverage: &coverage
+  stage: test
+  variables:
+    CARGO_INCREMENTAL: "0"
+    RUSTFLAGS: "-Cinstrument-coverage"
+  script:
+    - cargo test
+    - grcov . --binary-path ./target/debug/deps/ -s . -t cobertura --branch -o coverage.xml --llvm-path=/usr/bin
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+
+
+bookworm:build:
+  <<: *bookworm
+  <<: *build
+
+bookworm:test:
+  <<: *bookworm
+  <<: *test

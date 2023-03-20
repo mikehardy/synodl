@@ -17,11 +17,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
-use std::{error, fs::File, io::{prelude::*, Error, ErrorKind}};
+use std::{error, io::{self, ErrorKind}, sync::Arc};
 
 use url::Url;
-use curl::easy::Easy;
 use serde::{Deserialize, Serialize};
+use crate::syno::tls::get_tls_config;
 
 use crate::{
     Task, Config
@@ -80,42 +80,25 @@ struct TaskListResponse {
 }
 
 
-fn syno_do(url: &Url, cfg: &Config) -> Result<String, Error>
+fn syno_do(url: &Url, cfg: &Config) -> Result<String, Box<dyn error::Error>>
 {
-    let mut easy = Easy::new();
-    easy.url(&url.as_str())?;
+    let tls_config = get_tls_config(cfg)?;
 
-    match &cfg.cacert {
-        Some(f) => {
-            if f == "ignore" {
-                easy.ssl_verify_peer(false)?;
-            } else {
-                let mut buf = Vec::new();
-                File::open(f)?
-                    .read_to_end(&mut buf)?;
-                easy.ssl_cainfo_blob(&buf)?;
-            }
-        }
-        None => {}
-    };
+    let agent = ureq::AgentBuilder::new()
+        .tls_config(Arc::new(tls_config))
+        .build();
 
-    let mut buf = Vec::new();
-    {
-        let mut transfer = easy.transfer();
-        transfer.write_function(|data| {
-            buf.extend_from_slice(data);
-            Ok(data.len())
-        }).unwrap();
-        transfer.perform()?;
-    }
+    let res = agent
+        .request_url("GET", &url)
+        .call()?
+        .into_string()?;
 
-    let res = String::from_utf8(buf).unwrap();
     let syno = serde_json::from_str::<SynoResponse>(&res);
     let success = match syno {
         Ok(res) => res.success,
         Err(e) => {
             println!("Failed to load JSON response: {}", res);
-            return Err(Error::new(ErrorKind::InvalidData, e))
+            return Err(Box::new(e))
         }
     };
 
@@ -124,7 +107,7 @@ fn syno_do(url: &Url, cfg: &Config) -> Result<String, Error>
         false => {
             eprintln!("API request failed: {}", url);
             eprintln!("Response was: {}", res);
-            Err(Error::new(ErrorKind::Other, "API request failed"))
+            Err(Box::new(io::Error::new(ErrorKind::Other, "API request failed")))
         }
     }
 }

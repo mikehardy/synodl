@@ -1,3 +1,11 @@
+== 0.5.2 (20 Mar 2023) ==
+
+* Support for custom CA certificates is now an option feature (on by default)
+* Support for disabling certificate checks is now an optional feature
+* Lower the required Rust edition to 2018
+* Use 'getopts' instead of 'clap' to parse command-line arguments
+* Use 'ureq' instead of 'curl' for HTTP requests
+
 == 0.5.1 (17 Mar 2023) ==
 
 * Fix directory layout of distribution tarball
