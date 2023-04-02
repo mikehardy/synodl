@@ -54,18 +54,29 @@ pub struct Task {
     percent_up: f64
 }
 
+#[derive(PartialEq)]
+enum Activity {
+    Idle,
+    Refresh,
+    Quit,
+    Submit
+}
+
+pub struct UI {
+    ask_for_task_url: bool,
+    confirm_delete: bool,
+    delete_yes_selected: bool,
+    show_details: bool,
+    show_help: bool
+}
+
 pub struct App {
     state: TableState,
     tasks: Vec<Task>,
     input: String,
     error: String,
-    show_help: bool,
-    show_details: bool,
-    add_task: bool,
-    quitting: bool,
-    loading: bool,
-    ask_delete: bool,
-    delete_yes_selected: bool
+    activity: Activity,
+    ui: UI
 }
 
 #[derive(Deserialize, Serialize)]
@@ -80,18 +91,20 @@ pub struct Config {
 
 impl App {
     fn new() -> App {
+        let ui = UI {
+            ask_for_task_url: false,
+            confirm_delete: false,
+            delete_yes_selected: false,
+            show_details: false,
+            show_help: false,
+        };
         App {
+            activity: Activity::Refresh,
             state: TableState::default(),
             tasks: vec![],
             input: String::new(),
             error: String::new(),
-            show_help: false,
-            show_details: false,
-            add_task: false,
-            quitting: false,
-            loading: true,
-            ask_delete: false,
-            delete_yes_selected: false
+            ui: ui
         }
     }
 
@@ -171,9 +184,9 @@ impl App {
     }
 
     fn reload(&mut self, cfg: &Config, session: &Session) -> Result<(), Box<dyn error::Error>> {
-        self.loading = true;
+        self.activity = Activity::Refresh;
         self.tasks = syno_list(cfg, session)?;
-        self.loading = false;
+        self.activity = Activity::Idle;
 
         match self.state.selected() {
             Some(_i) => {},
@@ -187,13 +200,13 @@ impl App {
         match syno_download(cfg, session, &self.input) {
             Ok(()) => {
                 self.input.clear();
-                self.loading = true;
+                self.activity = Activity::Refresh;
             },
             Err(e) => {
                 self.error = e.to_string();
             }
         }
-        self.add_task = false;
+        self.ui.ask_for_task_url = false;
     }
 
     fn delete(&mut self, cfg: &Config, session: &Session) {
@@ -205,7 +218,7 @@ impl App {
                         match syno_delete(cfg, session, task) {
                             Ok(()) => {
                                 self.input.clear();
-                                self.loading = true;
+                                self.activity = Activity::Refresh;
                             },
                             Err(e) => {
                                 self.error = e.to_string();
@@ -257,7 +270,7 @@ fn load_config(file: &Path) -> Result<Config, Box<dyn error::Error>> {
     let file_content = fs::read_to_string(file)
         .expect("Error reading file");
     let mut opt = serde_ini::from_str::<Config>(&file_content)
-        .expect("Failed to loading configuration");
+        .expect("Failed to load configuration");
 
     // run password command if set
     match &opt.password_command {
@@ -385,79 +398,87 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App,
             lines = f.size().height - 2
         })?;
 
-        if app.quitting {
-            return app.quit(cfg, session);
-        }
-
-        if app.loading {
-            match app.reload(cfg, session) {
-                Ok(_) => {},
-                Err(e) => {
-                    app.error = e.to_string()
-                }
+        match app.activity {
+            Activity::Quit => {
+                return app.quit(cfg, session)
             }
-            app.loading = false;
-            continue;
-        }
+            Activity::Submit => {
+                app.start_download(cfg, session);
+                app.activity = Activity::Refresh;
+                continue
+            }
+            Activity::Refresh => {
+                match app.reload(cfg, session) {
+                    Ok(_) => {},
+                    Err(e) => {
+                        app.error = e.to_string()
+                    }
+                }
+                app.activity = Activity::Idle;
+                continue
+            }
+            _ => {}
+        };
 
         if let Event::Key(key) = event::read()? {
-            if app.show_help {
-                app.show_help = false
-            } else if app.show_details {
-                app.show_details = false
-            } else if app.add_task {
+            if app.ui.show_help {
+                app.ui.show_help = false
+            } else if app.ui.show_details {
+                app.ui.show_details = false
+            } else if app.ui.ask_for_task_url {
                 match key.code {
                     KeyCode::Enter => {
-                        app.start_download(cfg, session);
+                        app.ui.ask_for_task_url = false;
+                        app.activity = Activity::Submit;
                     },
                     KeyCode::Esc => {
-                        app.add_task = false;
+                        app.ui.ask_for_task_url = false;
                         app.input.clear();
                     },
                     KeyCode::Backspace => { app.input.pop(); },
                     KeyCode::Char(c) => { app.input.push(c) },
                     _ => { }
                 }
-            } else if app.ask_delete {
-                app.delete_yes_selected = match key.code {
-                    KeyCode::Left => !app.delete_yes_selected,
-                    KeyCode::Down => !app.delete_yes_selected,
-                    KeyCode::Char('h') => !app.delete_yes_selected,
-                    KeyCode::Char('H') => !app.delete_yes_selected,
-                    KeyCode::Char('l') => !app.delete_yes_selected,
-                    KeyCode::Char('L') => !app.delete_yes_selected,
+            } else if app.ui.confirm_delete {
+                app.ui.delete_yes_selected = match key.code {
+                    KeyCode::Left => !app.ui.delete_yes_selected,
+                    KeyCode::Down => !app.ui.delete_yes_selected,
+                    KeyCode::Char('h') => !app.ui.delete_yes_selected,
+                    KeyCode::Char('H') => !app.ui.delete_yes_selected,
+                    KeyCode::Char('l') => !app.ui.delete_yes_selected,
+                    KeyCode::Char('L') => !app.ui.delete_yes_selected,
                     KeyCode::Enter => {
-                        app.ask_delete = false;
-                        if app.delete_yes_selected {
+                        app.ui.confirm_delete = false;
+                        if app.ui.delete_yes_selected {
                             app.delete(cfg, session);
                         }
                         false
                     },
                     KeyCode::Esc => {
-                        app.ask_delete = false;
+                        app.ui.confirm_delete = false;
                         false
                     }
-                    _ => app.delete_yes_selected
+                    _ => app.ui.delete_yes_selected
                 }
             } else {
                 match key.code {
                     KeyCode::Down => app.next(),
                     KeyCode::Up => app.previous(),
-                    KeyCode::Char('a') => app.add_task = true,
-                    KeyCode::Char('A') => app.add_task = true,
-                    KeyCode::Char('d') => app.ask_delete = true,
-                    KeyCode::Char('D') => app.ask_delete = true,
-                    KeyCode::Char('i') => app.show_details = true,
-                    KeyCode::Char('I') => app.show_details = true,
+                    KeyCode::Char('a') => app.ui.ask_for_task_url = true,
+                    KeyCode::Char('A') => app.ui.ask_for_task_url = true,
+                    KeyCode::Char('d') => app.ui.confirm_delete = true,
+                    KeyCode::Char('D') => app.ui.confirm_delete = true,
+                    KeyCode::Char('i') => app.ui.show_details = true,
+                    KeyCode::Char('I') => app.ui.show_details = true,
                     KeyCode::Char('j') => app.next(),
                     KeyCode::Char('J') => app.next(),
                     KeyCode::Char('k') => app.previous(),
                     KeyCode::Char('K') => app.previous(),
-                    KeyCode::Char('q') => app.quitting = true,
-                    KeyCode::Char('Q') => app.quitting = true,
-                    KeyCode::Char('r') => app.loading = true,
-                    KeyCode::Char('R') => app.loading = true,
-                    KeyCode::Char('?') => app.show_help = true,
+                    KeyCode::Char('q') => app.activity = Activity::Quit,
+                    KeyCode::Char('Q') => app.activity = Activity::Quit,
+                    KeyCode::Char('r') => app.activity = Activity::Refresh,
+                    KeyCode::Char('R') => app.activity = Activity::Refresh,
+                    KeyCode::Char('?') => app.ui.show_help = true,
                     KeyCode::Home => app.first(),
                     KeyCode::End => app.last(),
                     KeyCode::PageDown => app.next_page(lines as usize),
