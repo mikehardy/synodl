@@ -67,9 +67,9 @@ pub fn ask_delete<B: Backend>(f: &mut Frame<B>, app: &App) {
         .split(rects[2].inner(&Margin{vertical: 0, horizontal: 1 }));
 
     let no = Paragraph::new("[ No ]")
-        .style(highlight(app.delete_yes_selected));
+        .style(highlight(app.ui.delete_yes_selected));
     let yes = Paragraph::new("[ Yes ]")
-        .style(highlight(!app.delete_yes_selected));
+        .style(highlight(!app.ui.delete_yes_selected));
 
     f.render_widget(no, selection[0]);
     f.render_widget(yes, selection[2]);

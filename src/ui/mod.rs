@@ -35,7 +35,7 @@ use crate::{
     ui::{help::show_help, taskdetails::show_details, addtask::add_task,
          delete::ask_delete, util::{speed_text, size_text},
          widgets::show_error},
-    App, Task, Config
+    App, Task, Config, Activity
 };
 
 
@@ -146,19 +146,19 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App, config: &Config) {
         show_tasks(f, app, config);
     }
 
-    if app.show_help {
+    if app.ui.show_help {
         show_help(f);
     }
 
-    if app.ask_delete {
+    if app.ui.confirm_delete {
         ask_delete(f, app);
     }
 
-    if app.show_details {
+    if app.ui.show_details {
         show_details(f, app);
     }
 
-    if app.add_task {
+    if app.ui.ask_for_task_url {
         add_task(f, app);
     }
 
@@ -169,12 +169,11 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App, config: &Config) {
 }
 
 fn status_text(app: &App, cfg: &Config) -> String {
-    if app.quitting {
-        return String::from("Quitting ...");
-    } else if app.loading {
-        return String::from("Refreshing ...");
-    } else {
-        return String::from(&cfg.url);
+    match app.activity {
+        Activity::Quit => String::from("Quitting ..."),
+        Activity::Refresh => String::from("Refreshing ..."),
+        Activity::Submit => String::from("Adding task ..."),
+        _ => String::from(&cfg.url)
     }
 }
 
@@ -192,7 +191,7 @@ mod tests {
     #[test]
     fn status_no_traffic() {
         let mut app = App::new();
-        app.loading = false;
+        app.activity = Activity::Idle;
         assert_eq!(status_traffic(&app),
             "up: 0 B/s, down: 0 B/s.  Press '?' for help.");
     }
@@ -200,7 +199,7 @@ mod tests {
     #[test]
     fn status_text_quitting() {
         let mut app = App::new();
-        app.quitting = true;
+        app.activity = Activity::Quit;
 
         let cfg = Config {
             user: String::from(""),
@@ -214,9 +213,25 @@ mod tests {
     }
 
     #[test]
+    fn status_text_adding_task() {
+        let mut app = App::new();
+        app.activity = Activity::Submit;
+
+        let cfg = Config {
+            user: String::from(""),
+            url: String::from("http://foo/"),
+            password: None,
+            password_command: None,
+            cacert: None
+        };
+
+        assert_eq!(status_text(&app, &cfg), "Adding task ...");
+    }
+
+    #[test]
     fn status_line_loading() {
         let mut app = App::new();
-        app.loading = true;
+        app.activity = Activity::Refresh;
 
         let cfg = Config {
             user: String::from(""),
@@ -232,7 +247,7 @@ mod tests {
     #[test]
     fn status_line_normal() {
         let mut app = App::new();
-        app.loading = false;
+        app.activity = Activity::Idle;
 
         let cfg = Config {
             user: String::from(""),
