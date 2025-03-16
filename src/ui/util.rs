@@ -84,8 +84,8 @@ pub fn make_row(label: &str, value: String) -> Row {
 }
 
 pub fn size_text(n: u64) -> String {
-    let byte = Byte::from_bytes(n as u128);
-    byte.get_appropriate_unit(false).to_string()
+    let byte = Byte::from_u64(n);
+    byte.to_string()
 }
 
 pub fn speed_text(n: u64) -> String {

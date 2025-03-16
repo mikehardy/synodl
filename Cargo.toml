@@ -10,25 +10,14 @@ keywords = ["download", "torrent", "synology", "nas"]
 categories = ["command-line-utilities"]
 
 [dependencies]
-crossterm = "0.26.0"
-dirs = "4.0"
+crossterm = "0.28.1"
+dirs = "6.0"
 serde = { version = "1.0.152", features = ["derive"] }
 serde_ini = "0.2.0"
 serde_json = "1.0"
 subprocess = "0.2.9"
 tui = "0.19.0"
-byte-unit = "4.0"
-ureq = { version = "2.6.2", features = ["rustls", "native-certs"] }
+byte-unit = "5.1.6"
+ureq = "3.0.9"
 url = "2.3.1"
 getopts = "0.2"
-rustls = "0.20.8"
-rustls-pemfile = {version = "*", optional = true}
-rustls-native-certs = {version = "*"}
-
-[dev-dependencies]
-mockall = "0.11.3"
-
-[features]
-default = ["custom_ca"]
-insecure_tls = ["rustls/dangerous_configuration"]
-custom_ca = ["dep:rustls-pemfile"]

@@ -37,7 +37,7 @@ use tui::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{ui::ui, syno::api::{syno_list, syno_login, syno_logout, syno_download, syno_delete,
+use crate::{ui::ui, syno::api::{syno_list, syno_list_tasks, syno_resume_all, syno_login, syno_logout, syno_download, syno_delete,
 Session}};
 
 #[derive(Deserialize, Serialize)]
@@ -301,6 +301,23 @@ fn add_task(cfg: Config, session: Session, url: String) -> Result<(), Box<dyn er
     syno_logout(&cfg, &session)
 }
 
+
+fn list_tasks(cfg: Config, session: Session) -> Result<(), Box<dyn error::Error>> {
+    println!("Listing download tasks ...");
+    syno_list_tasks(&cfg, &session)?;
+
+    println!("Disconnecting ...");
+    syno_logout(&cfg, &session)
+}
+
+fn resume_all_tasks(cfg: Config, session: Session) -> Result<(), Box<dyn error::Error>> {
+    println!("Resuming all download tasks ...");
+    syno_resume_all(&cfg, &session)?;
+
+    println!("Disconnecting ...");
+    syno_logout(&cfg, &session)
+}
+
 fn run_tui(cfg: Config, session: Session) -> Result<(), Box<dyn error::Error>> {
     // setup terminal
     enable_raw_mode()?;
@@ -345,6 +362,8 @@ fn main() -> Result<(), Box<dyn error::Error>> {
     let mut opts = Options::new();
 
     opts.optflag("h", "help", "Print help");
+    opts.optflag("l", "list", "List tasks");
+    opts.optflag("r", "resume-all", "resume all tasks");
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => { m }
         Err(f) => { panic!("{}", f.to_string()) }
@@ -380,6 +399,14 @@ fn main() -> Result<(), Box<dyn error::Error>> {
             return Err(e)
         }
     };
+
+    if matches.opt_present("l") {
+        return list_tasks(cfg, session);
+    }
+
+    if matches.opt_present("r") {
+        return resume_all_tasks(cfg, session);
+    }
 
     match add_url {
         None => run_tui(cfg, session),
