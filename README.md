@@ -55,19 +55,10 @@ password_command = gpg --decrypt ~/.synodl.pw
 
 ## SSL certificate
 
-With the default configuration, synodl will try to verify your SSL certificate
-against the system-wide CA certificates in `/etc/ssl/certs/ca-certificates.crt`.
-If you want to provide your own CA certificate, add this to your config file:
+synodl from this fork will never verify any server certificates - all server
+certificates will be trusted, meaning it will immediately work with self-signed
+certificates like most Synology DiskStations use.
 
-```
-cacert = /path/to/your/ca.cert
-```
-
-In case you want synodl to skip certificate validation, use this:
-
-```
-cacert = ignore
-```
-
-Note that in this case, anyone with basic networking skills can intercept your
-traffic and steal your password.
+Note that anyone with basic networking skills may implement a man-in-the-middle
+attack and intercept your traffic and steal your password, so you should only use
+this forked version of synodl on trusted networks.
