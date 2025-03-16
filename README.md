@@ -7,9 +7,26 @@ interface.
 
 ![synodl](https://code.ott.net/synodl/screenshot.png "synodl 0.1.0")
 
-## Downloading ##
+## Gratitude
 
-You can download synodl from [code.ott.net/synodl](https://code.ott.net/synodl/).
+This is a fork of the [synodl](https://code.ott.net/synodl) from Stefan Ott, he
+deserves all the credit for getting it to work.
+
+I don't even know Rust, but I wanted a quick command-line to fix a common state
+my Download Station with a self-signed cert gets in: all the seeding torrents go to "error" state.
+
+I want to resume them all.
+
+So I implemented these changes:
+
+- updated Cargo.toml to modern versions
+- new ureq version has easy method to accept all certs, so hacked out all rustls stuff
+- hacked in a new `-l` command line switch to list all tasks (as a test, really)
+- hacked in a new `-r` command line switch to resume the first 300 error tasks
+
+(I didn't want to learn chunk-iteration in Rust today, "all" tasks was too long a URL, so I just chose 300)
+
+The rest of the functionality is exactly as Stefan left it
 
 ## Getting started
 
